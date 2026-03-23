@@ -8,11 +8,13 @@ const nimClient = new OpenAI({
 const EMBED_MODEL = 'nvidia/llama-nemotron-embed-1b-v2'
 const EMBED_DIMS = 768
 
-export async function generateEmbedding(text: string): Promise<number[]> {
+export async function generateEmbedding(text: string, inputType: 'passage' | 'query' = 'passage'): Promise<number[]> {
   try {
     const response = await nimClient.embeddings.create({
       model: EMBED_MODEL,
       input: text.slice(0, 8000), // NIM has input length limits
+      // @ts-expect-error: NIM requires input_type for asymmetric models
+      input_type: inputType,
     })
     return response.data[0].embedding
   } catch (err) {
@@ -20,6 +22,11 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     // Fallback: return zero vector (matching will degrade but app won't crash)
     return new Array(EMBED_DIMS).fill(0)
   }
+}
+
+// Convenience wrapper for search queries (uses 'query' input_type)
+export function generateQueryEmbedding(text: string): Promise<number[]> {
+  return generateEmbedding(text, 'query')
 }
 
 export function cosineSimilarity(a: number[], b: number[]): number {

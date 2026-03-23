@@ -9,6 +9,7 @@ export interface IRequiredSkill {
 export interface IJob extends Document {
   _id: mongoose.Types.ObjectId
   recruiterId: mongoose.Types.ObjectId
+  companyName?: string
   title: string
   description: string
   requiredSkills: IRequiredSkill[]
@@ -28,6 +29,7 @@ export interface IJob extends Document {
 
 const JobSchema = new Schema<IJob>({
   recruiterId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  companyName: { type: String, default: '' },
   title: { type: String, required: true },
   description: { type: String, required: true },
   requiredSkills: [{

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSession } from 'next-auth/react'
 import { Navbar } from '@/components/Navbar'
 import { toast } from 'sonner'
 import { Loader2, Upload, Plus, X, Save, Sparkles } from 'lucide-react'
@@ -12,6 +13,7 @@ interface Education { degree: string; institution: string; field: string; year: 
 
 export default function CandidateProfilePage() {
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
 
@@ -21,6 +23,7 @@ export default function CandidateProfilePage() {
   })
 
   const [form, setForm] = useState({
+    name: '',
     headline: '',
     bio: '',
     location: '',
@@ -36,6 +39,7 @@ export default function CandidateProfilePage() {
   useEffect(() => {
     if (!profile || isLoading) return
     setForm({
+      name: (profile.name as string) || (session?.user?.name ?? ''),
       headline: profile.headline || '',
       bio: profile.bio || '',
       location: profile.location || '',
@@ -83,8 +87,33 @@ export default function CandidateProfilePage() {
       const res = await fetch('/api/candidate/resume', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast.success('Resume uploaded and parsed!')
+
+      const parsed = data.parsed
+      if (parsed) {
+        // Immediately populate form from parsed resume so user sees results right away
+        setForm((prev) => ({
+          ...prev,
+          // Only fill name if it's currently empty
+          name: prev.name || parsed.name || '',
+          headline: parsed.headline || prev.headline,
+          location: parsed.location || prev.location,
+          github: parsed.githubUrl || prev.github,
+          linkedin: parsed.linkedinUrl || prev.linkedin,
+          portfolio: parsed.portfolioUrl || prev.portfolio,
+          // Map parsed {skill, proficiency} → form {name, level}
+          skills: parsed.skills?.length
+            ? parsed.skills.map((s: { skill: string; proficiency?: string }) => ({
+                name: s.skill,
+                level: s.proficiency || 'intermediate',
+              }))
+            : prev.skills,
+          experience: parsed.experience?.length ? parsed.experience : prev.experience,
+          education: parsed.education?.length ? parsed.education : prev.education,
+        }))
+      }
+
       if (data.improvementTips?.length) setResumeTips(data.improvementTips)
+      toast.success('Resume uploaded & profile auto-filled! Click "Save changes" to confirm.')
       queryClient.invalidateQueries({ queryKey: ['candidate-profile'] })
     } catch {
       toast.error('Failed to upload resume')
@@ -190,11 +219,20 @@ export default function CandidateProfilePage() {
           <h2 className="font-semibold mb-4">Basic Information</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5">Professional headline</label>
+              <label className="block text-sm font-medium mb-1.5">Full name</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Manglam Jaiswal"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Professional headline <span className="text-xs text-muted-foreground font-normal">(your job title / role)</span></label>
               <input
                 value={form.headline}
                 onChange={(e) => setForm({ ...form, headline: e.target.value })}
-                placeholder="Senior React Developer · 5 years exp"
+                placeholder="Full-Stack Developer · 2 years exp"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
               />
             </div>

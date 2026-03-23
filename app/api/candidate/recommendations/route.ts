@@ -17,15 +17,17 @@ export async function GET() {
     .select('embedding recentInteractionSkills')
     .lean() as { embedding?: number[]; recentInteractionSkills?: string[] } | null
 
-  if (!profile?.embedding?.length) {
-    // No embedding yet — return recent active jobs
+  if (!profile?.embedding?.length || profile.embedding.every((v) => v === 0)) {
+    // No embedding yet (or all zeros) — return recent active jobs so graph isn't empty
     const db = mongoose.connection.db!
     const jobs = await db.collection('jobs')
       .find({ status: 'active' })
       .sort({ createdAt: -1 })
       .limit(10)
       .toArray()
-    return NextResponse.json(jobs.map((j) => ({ ...j, _id: j._id.toString() })))
+    return NextResponse.json(
+      jobs.map((j) => ({ ...j, _id: j._id.toString(), _matchScore: 0 }))
+    )
   }
 
   // Get already-applied job IDs to exclude

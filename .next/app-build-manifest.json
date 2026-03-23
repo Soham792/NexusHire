@@ -11,40 +11,50 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/candidate/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/candidate/dashboard/page.js"
-    ],
-    "/candidate/applications/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/candidate/applications/page.js"
-    ],
-    "/candidate/skill-gap/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/candidate/skill-gap/page.js"
-    ],
-    "/jobs/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/jobs/page.js"
-    ],
     "/candidate/opportunity-graph/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/candidate/opportunity-graph/page.js"
+    ],
+    "/candidate/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/candidate/dashboard/page.js"
     ],
     "/candidate/profile/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/candidate/profile/page.js"
     ],
-    "/candidate/interview/page": [
+    "/recruiter/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/candidate/interview/page.js"
+      "static/chunks/app/recruiter/dashboard/page.js"
+    ],
+    "/recruiter/jobs/[id]/graph/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/recruiter/jobs/[id]/graph/page.js"
+    ],
+    "/recruiter/candidates/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/recruiter/candidates/page.js"
+    ],
+    "/recruiter/profile/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/recruiter/profile/page.js"
+    ],
+    "/recruiter/jobs/[id]/pipeline/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/recruiter/jobs/[id]/pipeline/page.js"
+    ],
+    "/(auth)/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(auth)/login/page.js"
     ]
   }
 }

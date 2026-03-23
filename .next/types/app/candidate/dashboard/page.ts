@@ -1,4 +1,4 @@
-// File: D:\JobPortal\nexushire\app\candidate\dashboard\page.tsx
+// File: C:\Users\Manglam\Documents\NexusHire\app\candidate\dashboard\page.tsx
 import * as entry from '../../../../../app/candidate/dashboard/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

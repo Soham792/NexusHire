@@ -1,4 +1,4 @@
-// File: D:\JobPortal\nexushire\app\api\candidate\profile\route.ts
+// File: C:\Users\Manglam\Documents\NexusHire\app\api\candidate\profile\route.ts
 import * as entry from '../../../../../../app/api/candidate/profile/route.js'
 import type { NextRequest } from 'next/server.js'
 

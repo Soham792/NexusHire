@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import CandidateProfile from '@/lib/models/CandidateProfile'
 import { generateEmbedding } from '@/lib/nim'
+import { getResumeSignedUrl } from '@/lib/s3'
 
 export async function GET() {
   const session = await auth()
@@ -10,8 +11,20 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   await connectDB()
-  const profile = await CandidateProfile.findOne({ userId: session.user.id }).lean()
-  return NextResponse.json(profile || {})
+  const profile = await CandidateProfile.findOne({ userId: session.user.id }).lean() as Record<string, unknown> | null
+  if (!profile) return NextResponse.json({})
+
+  // Convert stored S3 key to a pre-signed URL so the frontend can display a download link
+  if (profile.resumeS3Key && typeof profile.resumeS3Key === 'string') {
+    try {
+      profile.resumeUrl = await getResumeSignedUrl(profile.resumeS3Key)
+    } catch {
+      // S3 not configured or key invalid — just omit the URL
+      profile.resumeUrl = null
+    }
+  }
+
+  return NextResponse.json(profile)
 }
 
 export async function PUT(req: Request) {
