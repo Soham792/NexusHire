@@ -30,7 +30,17 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           .select('headline skills profileStrength resumeUrl')
           .lean(),
       ])
-      return { ...app, candidate: { ...user, ...profile } }
+      const rawScore = app.matchScore as { overall?: number } | number | undefined
+      const matchScore =
+        rawScore && typeof rawScore === 'object'
+          ? (rawScore.overall ?? 0)
+          : (rawScore as number) ?? 0
+      return {
+        ...app,
+        candidate: { ...user, ...profile },
+        matchScore,
+        breakdown: (app as { breakdown?: unknown[] }).breakdown ?? [],
+      }
     })
   )
 

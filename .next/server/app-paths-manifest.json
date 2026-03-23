@@ -1,13 +1,15 @@
 {
-  "/page": "app/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/candidate/dashboard/page": "app/candidate/dashboard/page.js",
-  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js",
-  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
-  "/api/applications/route": "app/api/applications/route.js",
-  "/candidate/profile/page": "app/candidate/profile/page.js",
   "/candidate/applications/page": "app/candidate/applications/page.js",
-  "/jobs/page": "app/jobs/page.js",
-  "/api/jobs/route": "app/api/jobs/route.js"
+  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
+  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js",
+  "/api/applications/route": "app/api/applications/route.js",
+  "/candidate/opportunity-graph/page": "app/candidate/opportunity-graph/page.js",
+  "/api/ai/explain-match/route": "app/api/ai/explain-match/route.js",
+  "/candidate/interview/page": "app/candidate/interview/page.js",
+  "/candidate/profile/page": "app/candidate/profile/page.js",
+  "/api/jobs/[id]/route": "app/api/jobs/[id]/route.js",
+  "/candidate/skill-gap/page": "app/candidate/skill-gap/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/ai/skill-gap/route": "app/api/ai/skill-gap/route.js"
 }

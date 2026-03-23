@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
-import { Menu, X, Briefcase, LogOut, User, LayoutDashboard, Users, Building2 } from 'lucide-react'
+import { Menu, X, Briefcase, LogOut, LayoutDashboard, Users, Building2, Network } from 'lucide-react'
 
 export function Navbar() {
   const { data: session } = useSession()
@@ -35,6 +35,12 @@ export function Navbar() {
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
+                {role === 'candidate' && (
+                  <Link href="/candidate/opportunity-graph" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                    <Network className="h-4 w-4" />
+                    Opportunity Graph
+                  </Link>
+                )}
                 {role === 'recruiter' && (
                   <>
                     <Link href="/recruiter/candidates" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
@@ -96,6 +102,9 @@ export function Navbar() {
           {session ? (
             <>
               <Link href={dashPath} className="block text-sm" onClick={() => setOpen(false)}>Dashboard</Link>
+              {role === 'candidate' && (
+                <Link href="/candidate/opportunity-graph" className="block text-sm" onClick={() => setOpen(false)}>Opportunity Graph</Link>
+              )}
               <button onClick={() => signOut({ callbackUrl: '/' })} className="block text-sm text-muted-foreground">Sign out</button>
             </>
           ) : (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Navbar } from '@/components/Navbar'
 import { toast } from 'sonner'
@@ -32,22 +32,27 @@ export default function CandidateProfilePage() {
     portfolio: '',
   })
 
-  // Sync form with loaded profile
-  const [synced, setSynced] = useState(false)
-  if (profile && !isLoading && !synced) {
+  // Sync form with loaded profile (useEffect avoids state-during-render)
+  useEffect(() => {
+    if (!profile || isLoading) return
     setForm({
       headline: profile.headline || '',
       bio: profile.bio || '',
       location: profile.location || '',
-      skills: profile.skills || [],
+      // Convert schema {skill, proficiency} → form {name, level}
+      skills: (profile.skills || []).map((s: { skill?: string; name?: string; proficiency?: string; level?: string }) => ({
+        name: s.skill || s.name || '',
+        level: s.proficiency || s.level || 'intermediate',
+      })),
       experience: profile.experience || [],
       education: profile.education || [],
-      github: profile.socialLinks?.github || '',
-      linkedin: profile.socialLinks?.linkedin || '',
-      portfolio: profile.socialLinks?.portfolio || '',
+      // Schema stores individual URL fields, not a nested socialLinks object
+      github: profile.githubUrl || '',
+      linkedin: profile.linkedinUrl || '',
+      portfolio: profile.portfolioUrl || '',
     })
-    setSynced(true)
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile])
 
   const save = useMutation({
     mutationFn: () =>
@@ -81,7 +86,6 @@ export default function CandidateProfilePage() {
       toast.success('Resume uploaded and parsed!')
       if (data.improvementTips?.length) setResumeTips(data.improvementTips)
       queryClient.invalidateQueries({ queryKey: ['candidate-profile'] })
-      setSynced(false)
     } catch {
       toast.error('Failed to upload resume')
     } finally {

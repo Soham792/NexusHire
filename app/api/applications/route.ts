@@ -67,28 +67,30 @@ export async function POST(req: Request) {
 
     if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
 
-    let matchScore = 0
-    let breakdown: Awaited<ReturnType<typeof scoreMatch>>['breakdown'] = []
+    let scoreResult: Awaited<ReturnType<typeof scoreMatch>> = {
+      overall: 0, skillsMatch: 0, experienceMatch: 0, explanation: '', breakdown: [],
+    }
 
     if (profile) {
       try {
-        // scoreMatch(candidateProfile, jobEntity)
-        const result = await scoreMatch(profile, job)
-        matchScore = result.overall
-        breakdown = result.breakdown
+        scoreResult = await scoreMatch(profile, job)
       } catch {
         if (job.embedding?.length && profile.embedding?.length) {
           const { cosineSimilarity } = await import('@/lib/nim')
-          matchScore = Math.round(cosineSimilarity(job.embedding, profile.embedding) * 100)
+          const cosScore = Math.round(cosineSimilarity(job.embedding, profile.embedding) * 100)
+          scoreResult = { overall: cosScore, skillsMatch: cosScore, experienceMatch: cosScore, explanation: '', breakdown: [] }
         }
       }
     }
 
-    // Estimate percentile rank
-    const existingApps = await Application.find({ jobId }).select('matchScore').lean() as unknown as Array<{ matchScore: number }>
+    // Estimate percentile rank against existing applicants
+    const existingApps = await Application.find({ jobId }).select('matchScore').lean() as Array<{ matchScore: { overall?: number } | number }>
     let percentileRank = 100
     if (existingApps.length > 0) {
-      const lower = existingApps.filter((a) => a.matchScore < matchScore).length
+      const lower = existingApps.filter((a) => {
+        const s = typeof a.matchScore === 'object' ? (a.matchScore?.overall ?? 0) : (a.matchScore ?? 0)
+        return s < scoreResult.overall
+      }).length
       percentileRank = Math.round((lower / existingApps.length) * 100)
     }
 
@@ -96,8 +98,13 @@ export async function POST(req: Request) {
       candidateId: session.user.id,
       jobId,
       coverLetter,
-      matchScore,
-      skillBreakdown: breakdown,
+      matchScore: {
+        overall: scoreResult.overall,
+        skillsMatch: scoreResult.skillsMatch ?? scoreResult.overall,
+        experienceMatch: scoreResult.experienceMatch ?? scoreResult.overall,
+        explanation: scoreResult.explanation ?? '',
+      },
+      breakdown: scoreResult.breakdown ?? [],
       percentileRank,
       stage: 'applied',
       stageHistory: [{ stage: 'applied', timestamp: new Date(), note: 'Application submitted' }],

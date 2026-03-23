@@ -24,8 +24,20 @@ export async function PUT(req: Request) {
     const body = await req.json()
     await connectDB()
 
-    // Build a text blob for embedding
-    const skillsText = (body.skills || []).map((s: { name: string }) => s.name).join(', ')
+    // Map form skills {name, level} → schema skills {skill, proficiency}
+    const skills = (body.skills || []).map((s: { name?: string; skill?: string; level?: string; proficiency?: string }) => ({
+      skill: s.skill || s.name || '',
+      proficiency: s.proficiency || s.level || 'intermediate',
+    }))
+
+    // Map socialLinks object → individual URL fields
+    const socialLinks = body.socialLinks || {}
+    const githubUrl = socialLinks.github || body.githubUrl || ''
+    const linkedinUrl = socialLinks.linkedin || body.linkedinUrl || ''
+    const portfolioUrl = socialLinks.portfolio || body.portfolioUrl || ''
+
+    // Build embedding text
+    const skillsText = skills.map((s: { skill: string }) => s.skill).join(', ')
     const expText = (body.experience || [])
       .map((e: { title: string; company: string; description: string }) => `${e.title} at ${e.company}: ${e.description}`)
       .join('. ')
@@ -42,15 +54,27 @@ export async function PUT(req: Request) {
     let strength = 0
     if (body.headline) strength += 10
     if (body.bio) strength += 10
-    if ((body.skills || []).length > 0) strength += 20
+    if (skills.length > 0) strength += 20
     if ((body.experience || []).length > 0) strength += 25
     if ((body.education || []).length > 0) strength += 15
     if ((body.projects || []).length > 0) strength += 10
-    if (body.resumeUrl) strength += 10
 
     const profile = await CandidateProfile.findOneAndUpdate(
       { userId: session.user.id },
-      { ...body, embedding, profileStrength: strength },
+      {
+        headline: body.headline || '',
+        bio: body.bio || '',
+        location: body.location || '',
+        skills,
+        experience: body.experience || [],
+        education: body.education || [],
+        projects: body.projects || [],
+        githubUrl,
+        linkedinUrl,
+        portfolioUrl,
+        embedding,
+        profileStrength: strength,
+      },
       { new: true, upsert: true }
     )
 

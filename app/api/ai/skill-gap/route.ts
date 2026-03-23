@@ -16,34 +16,63 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const jobId = searchParams.get('jobId')
   const applicationId = searchParams.get('applicationId')
+  const regenerate = searchParams.get('regenerate') === 'true'
 
   await connectDB()
 
   const profile = await CandidateProfile.findOne({ userId: session.user.id }).lean() as {
-    skills?: Array<{ name: string; level?: string }>
+    skills?: Array<{ skill?: string; name?: string; proficiency?: string; level?: string }>
   } | null
 
   let job: { title?: string; requiredSkills?: Array<{ skill: string; weight: number }> } | null = null
-  let existingGap: unknown = null
+  let existingGap: { missingSkills?: unknown[] } | null = null
 
   if (jobId) {
     job = await Job.findById(jobId).lean()
   } else if (applicationId) {
-    const app = await Application.findById(applicationId).lean() as { jobId: unknown; skillGapPath?: unknown } | null
+    const app = await Application.findById(applicationId).lean() as {
+      jobId: unknown
+      skillGapPath?: { missingSkills?: unknown[] }
+    } | null
     if (app) {
       job = await Job.findById(app.jobId).lean()
-      existingGap = app.skillGapPath
+      existingGap = app.skillGapPath ?? null
     }
   }
 
   if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-  if (existingGap) return NextResponse.json(existingGap)
 
-  // Find missing skills
-  const candidateSkillNames = (profile?.skills || []).map((s) => s.name.toLowerCase())
-  const missingSkills = (job.requiredSkills || [])
-    .filter((s) => !candidateSkillNames.some((c) => c.includes(s.skill.toLowerCase()) || s.skill.toLowerCase().includes(c)))
+  // Only use the cache if it has real content and regenerate isn't forced
+  if (!regenerate && existingGap && (existingGap.missingSkills?.length ?? 0) > 0) {
+    return NextResponse.json(existingGap)
+  }
+
+  // Find missing skills — compare against both {skill} and {name} field shapes
+  const candidateSkillNames = (profile?.skills || [])
+    .map((s) => (s.skill || s.name || '').toLowerCase())
+    .filter(Boolean)
+
+  const requiredSkills = job.requiredSkills || []
+
+  const missingSkills = requiredSkills
+    .filter((s) => {
+      const jSkill = s.skill.toLowerCase()
+      return !candidateSkillNames.some((c) => c.includes(jSkill) || jSkill.includes(c))
+    })
     .slice(0, 5)
+
+  // If candidate has all required skills (or job has no required skills)
+  if (missingSkills.length === 0) {
+    const result = {
+      missingSkills: [],
+      allSkillsMatched: true,
+      matchedCount: candidateSkillNames.length,
+      requiredCount: requiredSkills.length,
+      timeline: null,
+      steps: [],
+    }
+    return NextResponse.json(result)
+  }
 
   try {
     interface SkillGapResult {
@@ -67,10 +96,11 @@ export async function GET(req: Request) {
       missingSkills: missingSkills.map((s, i) => ({
         skill: s.skill,
         priority: s.weight === 3 ? 'high' : s.weight === 2 ? 'medium' : 'low',
-        resources: plans[i]?.resources?.map((r) => r.title) || [],
+        resources: plans[i]?.resources || [],
         weeklyPlan: plans[i]?.weeklyPlan || [],
       })),
-      timeline: `${missingSkills.length * 2}-${missingSkills.length * 3} weeks`,
+      allSkillsMatched: false,
+      timeline: `${missingSkills.length * 2}–${missingSkills.length * 3} weeks`,
       steps: plans.flatMap((p, pi) =>
         (p.weeklyPlan || []).map((focus, wi) => ({
           week: pi * 3 + wi + 1,

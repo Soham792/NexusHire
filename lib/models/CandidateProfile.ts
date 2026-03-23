@@ -33,6 +33,7 @@ export interface ICandidateProfile extends Document {
   _id: mongoose.Types.ObjectId
   userId: mongoose.Types.ObjectId
   headline: string
+  bio?: string
   location: string
   githubUrl?: string
   portfolioUrl?: string
@@ -54,6 +55,7 @@ export interface ICandidateProfile extends Document {
 const CandidateProfileSchema = new Schema<ICandidateProfile>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   headline: { type: String, default: '' },
+  bio: { type: String, default: '' },
   location: { type: String, default: '' },
   githubUrl: String,
   portfolioUrl: String,

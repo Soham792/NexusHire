@@ -1,27 +1,87 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import Google from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { connectDB } from '@/lib/db'
 import { UserModel } from '@/lib/models/User'
 import { authConfig } from '@/lib/auth.config'
 
+// Verify a Firebase ID token using Firebase REST API (no Admin SDK needed)
+async function verifyFirebaseIdToken(idToken: string) {
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }
+    )
+    const data = await res.json()
+    if (data.error || !data.users?.[0]) return null
+    return data.users[0] as {
+      localId: string
+      email: string
+      displayName?: string
+      photoUrl?: string
+    }
+  } catch {
+    return null
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-    }),
     Credentials({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        firebaseToken: { label: 'Firebase Token', type: 'text' },
+        role: { label: 'Role', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
         await connectDB()
+
+        // ── Firebase Google sign-in path ──────────────────────────────
+        if (credentials?.firebaseToken) {
+          const fbUser = await verifyFirebaseIdToken(credentials.firebaseToken as string)
+          if (!fbUser?.email) return null
+
+          const existingUser = await UserModel.findOne({ email: fbUser.email }).lean()
+
+          if (existingUser) {
+            return {
+              id: existingUser._id.toString(),
+              email: existingUser.email,
+              name: existingUser.name,
+              role: existingUser.role,
+              image: existingUser.image ?? null,
+            }
+          }
+
+          // New user — create with chosen role (defaults to 'candidate')
+          const role = (credentials.role as string) || 'candidate'
+          const newUser = await UserModel.create({
+            email: fbUser.email,
+            name: fbUser.displayName || fbUser.email.split('@')[0],
+            image: fbUser.photoUrl ?? null,
+            role,
+            provider: 'firebase',
+          })
+
+          return {
+            id: newUser._id.toString(),
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            image: newUser.image ?? null,
+          }
+        }
+
+        // ── Email + password path ─────────────────────────────────────
+        if (!credentials?.email || !credentials?.password) return null
         const user = await UserModel.findOne({ email: credentials.email }).lean()
         if (!user || !user.passwordHash) return null
         const valid = await bcrypt.compare(credentials.password as string, user.passwordHash)
@@ -36,25 +96,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    ...authConfig.callbacks,
-    async signIn({ user, account }) {
-      if (account?.provider === 'google') {
-        await connectDB()
-        const existing = await UserModel.findOne({ email: user.email })
-        if (!existing) {
-          await UserModel.create({
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            role: 'candidate',
-            provider: 'google',
-          })
-        }
-      }
-      return true
-    },
-  },
 })
 
 declare module 'next-auth' {

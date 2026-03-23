@@ -138,7 +138,7 @@ Return:
 
   SKILL_GAP_PATH: (skill: string) => `
 Generate a 2-3 week learning path for: ${skill}
-Use only FREE resources (MDN, freeCodeCamp, YouTube, official docs, Coursera free audit).
+Use only FREE resources. Include real, specific URLs that actually exist.
 Return ONLY valid JSON:
 {
   "skill": "${skill}",
@@ -148,9 +148,19 @@ Return ONLY valid JSON:
     "Week 3: Advanced — edge cases"
   ],
   "resources": [
-    { "title": "Resource Name", "url": "https://...", "type": "video|article|course|docs" }
+    { "title": "Exact resource title", "url": "https://actual-url.com/path", "type": "video" },
+    { "title": "Exact resource title", "url": "https://actual-url.com/path", "type": "article" },
+    { "title": "Exact resource title", "url": "https://actual-url.com/path", "type": "course" },
+    { "title": "Exact resource title", "url": "https://actual-url.com/path", "type": "docs" }
   ]
-}`,
+}
+
+Rules:
+- type must be one of: video, article, course, docs, practice
+- Prefer: YouTube tutorials, official docs, MDN, freeCodeCamp.org, roadmap.sh, dev.to, Coursera free audit
+- Use real known URLs (e.g. https://www.youtube.com/..., https://developer.mozilla.org/..., https://www.freecodecamp.org/...)
+- Include 3-5 resources total, mix of types
+- Do NOT invent fake URLs`,
 
   EXPLAIN_MATCH: (score: number, breakdown: object[], candidateName: string, jobTitle: string) => `
 Explain in 3 clear sentences why ${candidateName} scored ${score}% for the ${jobTitle} role.

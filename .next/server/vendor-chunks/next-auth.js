@@ -79,16 +79,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 
 eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* reexport safe */ _auth_core_providers_credentials__WEBPACK_IMPORTED_MODULE_0__[\"default\"])\n/* harmony export */ });\n/* harmony import */ var _auth_core_providers_credentials__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @auth/core/providers/credentials */ \"(rsc)/./node_modules/@auth/core/providers/credentials.js\");\n\n\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9ub2RlX21vZHVsZXMvbmV4dC1hdXRoL3Byb3ZpZGVycy9jcmVkZW50aWFscy5qcyIsIm1hcHBpbmdzIjoiOzs7OztBQUFpRDtBQUNVIiwic291cmNlcyI6WyJ3ZWJwYWNrOi8vbmV4dXNoaXJlLy4vbm9kZV9tb2R1bGVzL25leHQtYXV0aC9wcm92aWRlcnMvY3JlZGVudGlhbHMuanM/NTVhYSJdLCJzb3VyY2VzQ29udGVudCI6WyJleHBvcnQgKiBmcm9tIFwiQGF1dGgvY29yZS9wcm92aWRlcnMvY3JlZGVudGlhbHNcIjtcbmV4cG9ydCB7IGRlZmF1bHQgfSBmcm9tIFwiQGF1dGgvY29yZS9wcm92aWRlcnMvY3JlZGVudGlhbHNcIjtcbiJdLCJuYW1lcyI6W10sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///(rsc)/./node_modules/next-auth/providers/credentials.js\n");
 
-/***/ }),
-
-/***/ "(rsc)/./node_modules/next-auth/providers/google.js":
-/*!****************************************************!*\
-  !*** ./node_modules/next-auth/providers/google.js ***!
-  \****************************************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* reexport safe */ _auth_core_providers_google__WEBPACK_IMPORTED_MODULE_0__[\"default\"])\n/* harmony export */ });\n/* harmony import */ var _auth_core_providers_google__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @auth/core/providers/google */ \"(rsc)/./node_modules/@auth/core/providers/google.js\");\n\n\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9ub2RlX21vZHVsZXMvbmV4dC1hdXRoL3Byb3ZpZGVycy9nb29nbGUuanMiLCJtYXBwaW5ncyI6Ijs7Ozs7QUFBNEM7QUFDVSIsInNvdXJjZXMiOlsid2VicGFjazovL25leHVzaGlyZS8uL25vZGVfbW9kdWxlcy9uZXh0LWF1dGgvcHJvdmlkZXJzL2dvb2dsZS5qcz83Y2ExIl0sInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCAqIGZyb20gXCJAYXV0aC9jb3JlL3Byb3ZpZGVycy9nb29nbGVcIjtcbmV4cG9ydCB7IGRlZmF1bHQgfSBmcm9tIFwiQGF1dGgvY29yZS9wcm92aWRlcnMvZ29vZ2xlXCI7XG4iXSwibmFtZXMiOltdLCJzb3VyY2VSb290IjoiIn0=\n//# sourceURL=webpack-internal:///(rsc)/./node_modules/next-auth/providers/google.js\n");
-
 /***/ })
 
 };
