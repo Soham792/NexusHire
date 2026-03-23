@@ -48,6 +48,21 @@ export async function PUT(req: Request) {
     const githubUrl = socialLinks.github || body.githubUrl || ''
     const linkedinUrl = socialLinks.linkedin || body.linkedinUrl || ''
     const portfolioUrl = socialLinks.portfolio || body.portfolioUrl || ''
+    const tryhackmeUrl = socialLinks.tryhackme || body.tryhackmeUrl || ''
+
+    // skillGroups: [{category, skills}] — sync flat skills array from skillGroups if provided
+    const skillGroups = (body.skillGroups || []).map((g: { category: string; skills: string[] | string }) => ({
+      category: g.category || '',
+      skills: Array.isArray(g.skills) ? g.skills : String(g.skills).split(',').map((s: string) => s.trim()).filter(Boolean),
+    }))
+
+    // If skillGroups provided, sync flat skills list from them (for embedding/matching)
+    if (skillGroups.length > 0 && skills.length === 0) {
+      const allFromGroups = skillGroups.flatMap((g: { skills: string[] }) => g.skills)
+      allFromGroups.forEach((sk: string) => {
+        skills.push({ skill: sk, proficiency: 'intermediate' })
+      })
+    }
 
     // Build embedding text
     const skillsText = skills.map((s: { skill: string }) => s.skill).join(', ')
@@ -78,13 +93,18 @@ export async function PUT(req: Request) {
         headline: body.headline || '',
         bio: body.bio || '',
         location: body.location || '',
+        phone: body.phone || '',
         skills,
+        skillGroups,
         experience: body.experience || [],
         education: body.education || [],
         projects: body.projects || [],
+        certifications: body.certifications || [],
+        achievements: body.achievements || [],
         githubUrl,
         linkedinUrl,
         portfolioUrl,
+        tryhackmeUrl,
         embedding,
         profileStrength: strength,
       },

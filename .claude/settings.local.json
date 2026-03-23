@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(txt|yml|yaml|env|cfg|ini|toml\\)$\")",
+      "Bash(find D:/JobPortal/nexushire/job_portal_ai -name requirements*.txt -o -name Pipfile)"
+    ]
+  }
+}

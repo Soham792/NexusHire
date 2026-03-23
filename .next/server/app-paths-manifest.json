@@ -1,9 +1,9 @@
 {
-  "/recruiter/jobs/[id]/pipeline/page": "app/recruiter/jobs/[id]/pipeline/page.js",
-  "/api/jobs/[id]/route": "app/api/jobs/[id]/route.js",
-  "/api/jobs/[id]/applicants/route": "app/api/jobs/[id]/applicants/route.js",
+  "/candidate/resume-builder/page": "app/candidate/resume-builder/page.js",
+  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/recruiter/candidates/page": "app/recruiter/candidates/page.js",
-  "/api/recruiter/candidates/route": "app/api/recruiter/candidates/route.js",
-  "/api/applications/[id]/stage/route": "app/api/applications/[id]/stage/route.js"
+  "/api/candidate/export-resume/route": "app/api/candidate/export-resume/route.js",
+  "/candidate/dashboard/page": "app/candidate/dashboard/page.js",
+  "/api/applications/route": "app/api/applications/route.js",
+  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js"
 }

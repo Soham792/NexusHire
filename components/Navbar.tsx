@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
-import { Menu, X, Briefcase, LogOut, LayoutDashboard, Users, Building2, Network } from 'lucide-react'
+import { Menu, X, Briefcase, LogOut, LayoutDashboard, Users, Building2, Network, FileText } from 'lucide-react'
 
 export function Navbar() {
   const { data: session } = useSession()
@@ -36,10 +36,16 @@ export function Navbar() {
                   Dashboard
                 </Link>
                 {role === 'candidate' && (
-                  <Link href="/candidate/opportunity-graph" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                    <Network className="h-4 w-4" />
-                    Opportunity Graph
-                  </Link>
+                  <>
+                    <Link href="/candidate/opportunity-graph" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                      <Network className="h-4 w-4" />
+                      Opportunity Graph
+                    </Link>
+                    <Link href="/candidate/resume-builder" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      Resume Tools
+                    </Link>
+                  </>
                 )}
                 {role === 'recruiter' && (
                   <>
@@ -103,7 +109,10 @@ export function Navbar() {
             <>
               <Link href={dashPath} className="block text-sm" onClick={() => setOpen(false)}>Dashboard</Link>
               {role === 'candidate' && (
-                <Link href="/candidate/opportunity-graph" className="block text-sm" onClick={() => setOpen(false)}>Opportunity Graph</Link>
+                <>
+                  <Link href="/candidate/opportunity-graph" className="block text-sm" onClick={() => setOpen(false)}>Opportunity Graph</Link>
+                  <Link href="/candidate/resume-builder" className="block text-sm" onClick={() => setOpen(false)}>Resume Tools</Link>
+                </>
               )}
               <button onClick={() => signOut({ callbackUrl: '/' })} className="block text-sm text-muted-foreground">Sign out</button>
             </>

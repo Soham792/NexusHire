@@ -168,6 +168,139 @@ Skill breakdown: ${JSON.stringify(breakdown).slice(0, 500)}
 Be specific. Mention exact skills that matched and exact skills that are missing.
 Return only the explanation text, no JSON.`,
 
+  ENHANCE_ACHIEVEMENTS: (items: string[]) => `
+Rewrite these achievement bullet points to be more impactful, specific, and quantified.
+Return ONLY valid JSON, no markdown.
+
+Achievements:
+${items.map((a, i) => `${i + 1}. ${a}`).join('\n')}
+
+Return:
+{
+  "enhanced": [
+    "Enhanced achievement 1",
+    "Enhanced achievement 2"
+  ]
+}
+
+Rules:
+- Preserve all factual information — do NOT invent numbers, ranks, or details not present in the original
+- Add context only if it makes the claim clearer (e.g. "global platform" after "TryHackMe")
+- Start with strong action verbs: Ranked, Achieved, Won, Placed, Secured, etc.
+- Keep each item under 25 words
+- Bold keywords are fine — output plain text only`,
+
+  ENHANCE_PROJECT_BULLETS: (projectName: string, bullets: string[], techStack: string) => `
+Rewrite these project description bullet points to be more impactful for a resume.
+Return ONLY valid JSON, no markdown.
+
+Project: ${projectName}
+Tech Stack: ${techStack}
+Bullets:
+${bullets.map((b, i) => `${i + 1}. ${b}`).join('\n')}
+
+Return:
+{
+  "enhanced": [
+    "Improved bullet 1",
+    "Improved bullet 2"
+  ]
+}
+
+Rules:
+- Start each bullet with a strong past-tense action verb (Developed, Built, Designed, Implemented, etc.)
+- Mention specific technical components or outcomes where known
+- Keep each under 25 words
+- Do NOT add features or details not present in the original`,
+
+  ATS_CHECK: (resumeText: string, jobDescription: string) => `
+Analyze this candidate's profile against the job description and calculate an ATS compatibility score.
+Return ONLY valid JSON, no markdown, no explanation.
+
+Candidate Profile:
+${resumeText.slice(0, 2000)}
+
+Job Description:
+${jobDescription.slice(0, 2000)}
+
+Return this exact JSON structure:
+{
+  "atsScore": 72,
+  "matchedKeywords": ["React", "Node.js", "MongoDB"],
+  "missingKeywords": ["Docker", "Kubernetes", "AWS"],
+  "feedback": "3-4 sentence specific, actionable feedback on how to close the gap for this exact JD."
+}
+
+Rules:
+- atsScore: 0-100 based on keyword overlap, skill relevance, and experience alignment
+- matchedKeywords: important skills/keywords from the JD the candidate clearly has (5-10 items max)
+- missingKeywords: important skills/keywords from the JD the candidate lacks (5-10 items max)
+- feedback must be specific to this candidate and this JD — no generic advice`,
+
+  IMPROVE_BULLET: (bullet: string, targetRole: string) => `
+Rewrite this resume bullet point using strong action verbs and STAR format for a ${targetRole} role.
+
+Original: "${bullet}"
+
+Return ONLY valid JSON:
+{
+  "improved": [
+    "Strong version 1 with quantified impact",
+    "Strong version 2 with different emphasis",
+    "Concise version 3"
+  ],
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "feedback": "One sentence on what was weak in the original."
+}
+
+Rules:
+- Each improved option is ONE bullet (no sub-points), under 30 words
+- Start with a strong past-tense action verb (Built, Reduced, Led, Designed, Automated, etc.)
+- Include measurable impact where possible (%, $, time saved, scale)
+- keywords are ATS-relevant terms added/highlighted by the rewrite`,
+
+  GENERATE_SUMMARY: (profile: object) => `
+Generate a concise professional resume summary for this candidate.
+Return ONLY valid JSON, no markdown.
+
+Profile:
+${JSON.stringify(profile, null, 2).slice(0, 1500)}
+
+Return:
+{
+  "summary": "3-sentence professional summary"
+}
+
+Rules:
+- Sentence 1: Role/title + years of experience + top specialization
+- Sentence 2: 2-3 key technical strengths + specific domain/achievement
+- Sentence 3: Career goal or unique value proposition
+- Write in third-person omitting subject ("Experienced engineer..." not "I am...")
+- Be specific, avoid "passionate", "hardworking", "results-driven"
+- Max 65 words total`,
+
+  CATEGORIZE_SKILLS: (skills: string[]) => `
+Categorize these skills into four groups.
+Return ONLY valid JSON, no markdown.
+
+Skills: ${JSON.stringify(skills)}
+
+Return:
+{
+  "languages": ["Python", "JavaScript"],
+  "frameworks": ["React", "Django"],
+  "tools": ["Docker", "Git", "AWS", "PostgreSQL"],
+  "soft": ["Leadership", "Communication"]
+}
+
+Rules:
+- languages: programming/scripting/markup languages (Python, JS, SQL, HTML, CSS, Go, etc.)
+- frameworks: libraries, frameworks, runtime platforms (React, Django, Spring, Next.js, etc.)
+- tools: DevOps, cloud, databases, IDEs, software tools (Docker, AWS, MongoDB, Figma, etc.)
+- soft: interpersonal, business, management skills
+- Include EVERY input skill in exactly ONE category — do NOT omit any
+- Do NOT add skills that were not in the input`,
+
   CONTEXTUAL_REJECTION: (params: {
     jobTitle: string
     jobDescription: string

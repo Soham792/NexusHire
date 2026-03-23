@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/recruiter/jobs/[id]/pipeline/page": [
+    "/candidate/resume-builder/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/recruiter/jobs/[id]/pipeline/page.js"
+      "static/chunks/app/candidate/resume-builder/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -11,10 +11,10 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/recruiter/candidates/page": [
+    "/candidate/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/recruiter/candidates/page.js"
+      "static/chunks/app/candidate/dashboard/page.js"
     ]
   }
 }

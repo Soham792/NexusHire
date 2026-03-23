@@ -5,11 +5,40 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
 import { Navbar } from '@/components/Navbar'
 import { toast } from 'sonner'
-import { Loader2, Upload, Plus, X, Save, Sparkles } from 'lucide-react'
+import {
+  Loader2, Upload, Plus, X, Save, Sparkles, Wand2, Tags, FileText,
+} from 'lucide-react'
+import Link from 'next/link'
 
 interface Skill { name: string; level: string }
-interface Experience { title: string; company: string; startDate: string; endDate: string; description: string; current: boolean }
+interface Experience {
+  title: string; company: string; startDate: string
+  endDate: string; description: string; current: boolean
+}
 interface Education { degree: string; institution: string; field: string; year: number }
+
+interface BulletModal {
+  expIndex: number
+  improved: string[]
+  keywords: string[]
+  feedback: string
+}
+
+interface SkillCategories {
+  languages: string[]
+  frameworks: string[]
+  tools: string[]
+  soft: string[]
+}
+
+const CATEGORY_LABELS: Record<keyof SkillCategories, string> = {
+  languages: 'Languages',
+  frameworks: 'Frameworks & Libraries',
+  tools: 'Tools & Cloud',
+  soft: 'Soft Skills',
+}
+
+const PROFICIENCY_OPTIONS = ['beginner', 'intermediate', 'advanced', 'expert']
 
 export default function CandidateProfilePage() {
   const queryClient = useQueryClient()
@@ -35,7 +64,14 @@ export default function CandidateProfilePage() {
     portfolio: '',
   })
 
-  // Sync form with loaded profile (useEffect avoids state-during-render)
+  // AI state
+  const [generatingSummary, setGeneratingSummary] = useState(false)
+  const [categorizingSkills, setCategorizingSkills] = useState(false)
+  const [skillCategories, setSkillCategories] = useState<SkillCategories | null>(null)
+  const [bulletModal, setBulletModal] = useState<BulletModal | null>(null)
+  const [improvingBullet, setImprovingBullet] = useState<number | null>(null) // expIndex
+  const [resumeTips, setResumeTips] = useState<string[]>([])
+
   useEffect(() => {
     if (!profile || isLoading) return
     setForm({
@@ -43,14 +79,12 @@ export default function CandidateProfilePage() {
       headline: profile.headline || '',
       bio: profile.bio || '',
       location: profile.location || '',
-      // Convert schema {skill, proficiency} → form {name, level}
       skills: (profile.skills || []).map((s: { skill?: string; name?: string; proficiency?: string; level?: string }) => ({
         name: s.skill || s.name || '',
         level: s.proficiency || s.level || 'intermediate',
       })),
       experience: profile.experience || [],
       education: profile.education || [],
-      // Schema stores individual URL fields, not a nested socialLinks object
       github: profile.githubUrl || '',
       linkedin: profile.linkedinUrl || '',
       portfolio: profile.portfolioUrl || '',
@@ -75,8 +109,6 @@ export default function CandidateProfilePage() {
     onError: () => toast.error('Failed to save profile'),
   })
 
-  const [resumeTips, setResumeTips] = useState<string[]>([])
-
   async function handleResumeUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -87,20 +119,16 @@ export default function CandidateProfilePage() {
       const res = await fetch('/api/candidate/resume', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-
       const parsed = data.parsed
       if (parsed) {
-        // Immediately populate form from parsed resume so user sees results right away
         setForm((prev) => ({
           ...prev,
-          // Only fill name if it's currently empty
           name: prev.name || parsed.name || '',
           headline: parsed.headline || prev.headline,
           location: parsed.location || prev.location,
           github: parsed.githubUrl || prev.github,
           linkedin: parsed.linkedinUrl || prev.linkedin,
           portfolio: parsed.portfolioUrl || prev.portfolio,
-          // Map parsed {skill, proficiency} → form {name, level}
           skills: parsed.skills?.length
             ? parsed.skills.map((s: { skill: string; proficiency?: string }) => ({
                 name: s.skill,
@@ -111,7 +139,6 @@ export default function CandidateProfilePage() {
           education: parsed.education?.length ? parsed.education : prev.education,
         }))
       }
-
       if (data.improvementTips?.length) setResumeTips(data.improvementTips)
       toast.success('Resume uploaded & profile auto-filled! Click "Save changes" to confirm.')
       queryClient.invalidateQueries({ queryKey: ['candidate-profile'] })
@@ -122,17 +149,94 @@ export default function CandidateProfilePage() {
     }
   }
 
+  // ── AI: Generate Summary ──────────────────────────────────────────────
+  async function handleGenerateSummary() {
+    setGeneratingSummary(true)
+    try {
+      const res = await fetch('/api/candidate/generate-summary', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setForm((prev) => ({ ...prev, bio: data.summary }))
+      toast.success('Summary generated! Edit it to personalise.')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate summary')
+    } finally {
+      setGeneratingSummary(false)
+    }
+  }
+
+  // ── AI: Categorize Skills ─────────────────────────────────────────────
+  async function handleCategorizeSkills() {
+    if (form.skills.length === 0) {
+      toast.error('Add some skills first')
+      return
+    }
+    setCategorizingSkills(true)
+    try {
+      const res = await fetch('/api/candidate/categorize-skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skills: form.skills.map((s) => s.name).filter(Boolean) }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setSkillCategories(data)
+      toast.success('Skills categorized!')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to categorize skills')
+    } finally {
+      setCategorizingSkills(false)
+    }
+  }
+
+  // ── AI: Improve Bullet ────────────────────────────────────────────────
+  async function handleImproveBullet(expIndex: number) {
+    const desc = form.experience[expIndex]?.description
+    if (!desc?.trim()) {
+      toast.error('Write a description first')
+      return
+    }
+    setImprovingBullet(expIndex)
+    try {
+      const res = await fetch('/api/candidate/improve-bullet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bullet: desc, targetRole: form.headline || 'Software Engineer' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setBulletModal({ expIndex, ...data })
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to improve bullet')
+    } finally {
+      setImprovingBullet(null)
+    }
+  }
+
+  function applyImprovedBullet(text: string) {
+    if (bulletModal === null) return
+    const experience = [...form.experience]
+    experience[bulletModal.expIndex] = { ...experience[bulletModal.expIndex], description: text }
+    setForm({ ...form, experience })
+    setBulletModal(null)
+    toast.success('Applied! Remember to save.')
+  }
+
   function addSkill() {
     setForm({ ...form, skills: [...form.skills, { name: '', level: 'intermediate' }] })
   }
   function removeSkill(i: number) {
     setForm({ ...form, skills: form.skills.filter((_, idx) => idx !== i) })
+    setSkillCategories(null)
   }
 
   function addExp() {
     setForm({
       ...form,
-      experience: [...form.experience, { title: '', company: '', startDate: '', endDate: '', description: '', current: false }],
+      experience: [
+        ...form.experience,
+        { title: '', company: '', startDate: '', endDate: '', description: '', current: false },
+      ],
     })
   }
   function removeExp(i: number) {
@@ -143,7 +247,9 @@ export default function CandidateProfilePage() {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="flex justify-center py-40"><Loader2 className="h-8 w-8 animate-spin text-violet-500" /></div>
+        <div className="flex justify-center py-40">
+          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        </div>
       </div>
     )
   }
@@ -153,7 +259,16 @@ export default function CandidateProfilePage() {
       <Navbar />
       <div className="mx-auto max-w-3xl px-4 py-10">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Edit Profile</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Edit Profile</h1>
+            <Link
+              href="/candidate/resume-builder"
+              className="inline-flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors mt-1"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              ATS Checker &amp; PDF Export →
+            </Link>
+          </div>
           <button
             onClick={() => save.mutate()}
             disabled={save.isPending}
@@ -169,7 +284,12 @@ export default function CandidateProfilePage() {
           <h2 className="font-semibold mb-4">Resume</h2>
           <div className="flex items-center gap-4">
             {profile?.resumeUrl && (
-              <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-violet-400 hover:text-violet-300">
+              <a
+                href={profile.resumeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-violet-400 hover:text-violet-300"
+              >
                 View current resume
               </a>
             )}
@@ -223,12 +343,15 @@ export default function CandidateProfilePage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Manglam Jaiswal"
+                placeholder="Your full name"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Professional headline <span className="text-xs text-muted-foreground font-normal">(your job title / role)</span></label>
+              <label className="block text-sm font-medium mb-1.5">
+                Professional headline{' '}
+                <span className="text-xs text-muted-foreground font-normal">(your job title / role)</span>
+              </label>
               <input
                 value={form.headline}
                 onChange={(e) => setForm({ ...form, headline: e.target.value })}
@@ -236,16 +359,33 @@ export default function CandidateProfilePage() {
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
               />
             </div>
+
+            {/* Bio with AI Generate */}
             <div>
-              <label className="block text-sm font-medium mb-1.5">Bio</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">
+                  Professional Summary / Bio
+                </label>
+                <button
+                  onClick={handleGenerateSummary}
+                  disabled={generatingSummary}
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs text-violet-300 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+                >
+                  {generatingSummary
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <Wand2 className="h-3 w-3" />}
+                  {generatingSummary ? 'Generating…' : 'Generate with AI'}
+                </button>
+              </div>
               <textarea
-                rows={3}
+                rows={4}
                 value={form.bio}
                 onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                placeholder="Tell employers about yourself…"
+                placeholder="Tell employers about yourself… or click Generate with AI."
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all resize-none"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium mb-1.5">Location</label>
               <input
@@ -279,10 +419,66 @@ export default function CandidateProfilePage() {
         <div className="glass rounded-2xl p-6 mb-6 gradient-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Skills</h2>
-            <button onClick={addSkill} className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300">
-              <Plus className="h-4 w-4" /> Add skill
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCategorizeSkills}
+                disabled={categorizingSkills || form.skills.length === 0}
+                className="flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs text-violet-300 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+              >
+                {categorizingSkills
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <Tags className="h-3 w-3" />}
+                {categorizingSkills ? 'Categorizing…' : 'Categorize with AI'}
+              </button>
+              <button
+                onClick={addSkill}
+                className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+              >
+                <Plus className="h-4 w-4" /> Add skill
+              </button>
+            </div>
           </div>
+
+          {/* Categorized view */}
+          {skillCategories && (
+            <div className="mb-4 rounded-xl border border-violet-500/20 bg-violet-500/8 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-violet-300 flex items-center gap-1.5">
+                  <Tags className="h-3.5 w-3.5" /> AI Skill Categories
+                </p>
+                <button
+                  onClick={() => setSkillCategories(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <div className="space-y-2">
+                {(Object.keys(skillCategories) as Array<keyof SkillCategories>).map((cat) => {
+                  const items = skillCategories[cat]
+                  if (items.length === 0) return null
+                  return (
+                    <div key={cat} className="flex gap-2 flex-wrap items-start">
+                      <span className="text-xs text-muted-foreground shrink-0 w-32">
+                        {CATEGORY_LABELS[cat]}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {items.map((sk) => (
+                          <span
+                            key={sk}
+                            className="rounded-lg bg-white/8 px-2.5 py-0.5 text-xs text-foreground"
+                          >
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             {form.skills.map((skill, i) => (
               <div key={i} className="flex gap-2">
@@ -292,6 +488,7 @@ export default function CandidateProfilePage() {
                     const skills = [...form.skills]
                     skills[i] = { ...skills[i], name: e.target.value }
                     setForm({ ...form, skills })
+                    setSkillCategories(null)
                   }}
                   placeholder="e.g. React"
                   className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
@@ -305,17 +502,22 @@ export default function CandidateProfilePage() {
                   }}
                   className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
                 >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="expert">Expert</option>
+                  {PROFICIENCY_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+                  ))}
                 </select>
-                <button onClick={() => removeSkill(i)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={() => removeSkill(i)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             ))}
             {form.skills.length === 0 && (
-              <p className="text-sm text-muted-foreground">No skills added yet. Click "Add skill" or upload your resume.</p>
+              <p className="text-sm text-muted-foreground">
+                No skills added yet. Click &quot;Add skill&quot; or upload your resume.
+              </p>
             )}
           </div>
         </div>
@@ -324,14 +526,20 @@ export default function CandidateProfilePage() {
         <div className="glass rounded-2xl p-6 mb-6 gradient-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Experience</h2>
-            <button onClick={addExp} className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300">
+            <button
+              onClick={addExp}
+              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+            >
               <Plus className="h-4 w-4" /> Add
             </button>
           </div>
           <div className="space-y-4">
             {form.experience.map((exp, i) => (
               <div key={i} className="rounded-xl border border-white/10 bg-white/3 p-4 relative">
-                <button onClick={() => removeExp(i)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground">
+                <button
+                  onClick={() => removeExp(i)}
+                  className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+                >
                   <X className="h-4 w-4" />
                 </button>
                 <div className="grid grid-cols-2 gap-3 mb-3">
@@ -356,17 +564,32 @@ export default function CandidateProfilePage() {
                     className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all"
                   />
                 </div>
-                <textarea
-                  rows={2}
-                  value={exp.description}
-                  onChange={(e) => {
-                    const experience = [...form.experience]
-                    experience[i] = { ...experience[i], description: e.target.value }
-                    setForm({ ...form, experience })
-                  }}
-                  placeholder="Describe your role and achievements…"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all resize-none"
-                />
+
+                {/* Description with Improve Bullet button */}
+                <div className="relative">
+                  <textarea
+                    rows={2}
+                    value={exp.description}
+                    onChange={(e) => {
+                      const experience = [...form.experience]
+                      experience[i] = { ...experience[i], description: e.target.value }
+                      setForm({ ...form, experience })
+                    }}
+                    placeholder="Describe your role and achievements…"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 pr-28 text-sm focus:outline-none focus:ring-2 focus:ring-violet-600 transition-all resize-none"
+                  />
+                  <button
+                    onClick={() => handleImproveBullet(i)}
+                    disabled={improvingBullet === i}
+                    title="Improve with AI (STAR format)"
+                    className="absolute top-2 right-2 flex items-center gap-1 rounded-lg border border-violet-500/30 bg-violet-500/10 px-2 py-1 text-xs text-violet-300 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {improvingBullet === i
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Sparkles className="h-3 w-3" />}
+                    Improve
+                  </button>
+                </div>
               </div>
             ))}
             {form.experience.length === 0 && (
@@ -375,6 +598,65 @@ export default function CandidateProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* ── Bullet Improve Modal ───────────────────────────────────────── */}
+      {bulletModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[hsl(0,0%,6%)] p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-violet-400" />
+                <h3 className="font-semibold">STAR Bullet Suggestions</h3>
+              </div>
+              <button
+                onClick={() => setBulletModal(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {bulletModal.feedback && (
+              <div className="mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300">
+                <span className="font-medium">What was weak: </span>{bulletModal.feedback}
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground mb-3">
+              Click an option to apply it to your description:
+            </p>
+
+            <div className="space-y-2 mb-4">
+              {bulletModal.improved.map((option, i) => (
+                <button
+                  key={i}
+                  onClick={() => applyImprovedBullet(option)}
+                  className="w-full text-left rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm hover:border-violet-500/50 hover:bg-violet-500/8 transition-all"
+                >
+                  <span className="text-xs text-violet-400 font-medium mr-2">Option {i + 1}</span>
+                  {option}
+                </button>
+              ))}
+            </div>
+
+            {bulletModal.keywords.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">ATS Keywords added:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {bulletModal.keywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="rounded-full bg-violet-500/15 border border-violet-500/30 px-2.5 py-0.5 text-xs text-violet-300"
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
