@@ -3,8 +3,10 @@ import { auth } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import Application from '@/lib/models/Application'
 import Job from '@/lib/models/Job'
+import User from '@/lib/models/User'
 import CandidateProfile from '@/lib/models/CandidateProfile'
 import { scoreMatch } from '@/lib/ai/scoreMatch'
+import { sendApplicationReceipt, sendTopApplicantAlert } from '@/lib/mailer'
 
 export async function GET(req: Request) {
   const session = await auth()
@@ -111,6 +113,53 @@ export async function POST(req: Request) {
     })
 
     await Job.findByIdAndUpdate(jobId, { $inc: { applicantCount: 1 } })
+
+    // ── Fire-and-forget emails (never block response) ──────────────────────
+    ;(async () => {
+      try {
+        const [candidateUser, recruiterUser, fullJob] = await Promise.all([
+          User.findById(session.user.id).select('name email').lean() as Promise<{ name?: string; email?: string } | null>,
+          Job.findById(jobId).select('recruiterId companyName title').lean() as Promise<{ recruiterId?: unknown; companyName?: string; title?: string } | null>,
+          Job.findById(jobId).lean() as Promise<{ recruiterId?: unknown; companyName?: string; title?: string } | null>,
+        ])
+
+        const recruiter = recruiterUser?.recruiterId
+          ? await User.findById(recruiterUser.recruiterId).select('name email').lean() as { name?: string; email?: string } | null
+          : null
+
+        const jobFull = fullJob as { recruiterId?: unknown; companyName?: string; title?: string } | null
+
+        // 1. Candidate receipt
+        if (candidateUser?.email) {
+          await sendApplicationReceipt({
+            to: candidateUser.email,
+            candidateName: candidateUser.name || 'there',
+            jobTitle: job?.title || 'this role',
+            companyName: (job as { companyName?: string })?.companyName || '',
+            matchScore: scoreResult.overall,
+            applicationId: String(application._id),
+          })
+        }
+
+        // 2. Top-tier alert for recruiter (score ≥ 85)
+        if (scoreResult.overall >= 85) {
+          const rec = await User.findById((jobFull as { recruiterId?: unknown })?.recruiterId).select('name email').lean() as { name?: string; email?: string } | null
+          if (rec?.email) {
+            await sendTopApplicantAlert({
+              to: rec.email,
+              recruiterName: rec.name || 'there',
+              jobTitle: job?.title || 'this role',
+              candidateName: candidateUser?.name || 'A candidate',
+              matchScore: scoreResult.overall,
+              jobId: String(jobId),
+            })
+          }
+        }
+      } catch (emailErr) {
+        console.error('[Email] Background send failed:', emailErr)
+      }
+    })()
+
     return NextResponse.json(application, { status: 201 })
   } catch (err) {
     console.error('Application error:', err)

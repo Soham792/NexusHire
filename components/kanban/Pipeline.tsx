@@ -18,6 +18,7 @@ import { Zap } from 'lucide-react'
 export interface PipelineApplication {
   _id: string
   stage: string
+  outcome?: string
   matchScore: number
   percentileRank?: number
   createdAt: string
@@ -69,10 +70,12 @@ function ApplicationCard({
               {app.candidate?.name?.[0]?.toUpperCase() || '?'}
             </div>
           )}
-          <div className="min-w-0">
-            <div className="flex items-center gap-1">
+          <div className="min-w-0 flex flex-col items-start">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-sm font-medium truncate">{app.candidate?.name || 'Unknown'}</p>
               {medal && <span className="text-sm shrink-0">{medal}</span>}
+              {app.outcome === 'hired' && <span className="text-[10px] uppercase tracking-wider font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-sm">Hired</span>}
+              {app.outcome === 'rejected' && <span className="text-[10px] uppercase tracking-wider font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-sm">Rejected</span>}
             </div>
             {app.candidate?.headline && (
               <p className="text-xs text-muted-foreground truncate">{app.candidate.headline}</p>

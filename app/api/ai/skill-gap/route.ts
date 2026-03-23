@@ -4,9 +4,11 @@ import connectDB from '@/lib/db'
 import Job from '@/lib/models/Job'
 import CandidateProfile from '@/lib/models/CandidateProfile'
 import Application from '@/lib/models/Application'
+import User from '@/lib/models/User'
 import { callGroqJSON, MODELS } from '@/lib/groq'
 import { PROMPTS } from '@/lib/ai/prompts'
 
+// ── GET: original skill gap (JD vs candidate profile) ────────────────────────
 export async function GET(req: Request) {
   const session = await auth()
   if (!session || session.user.role !== 'candidate') {
@@ -118,5 +120,136 @@ export async function GET(req: Request) {
   } catch (err) {
     console.error('Skill gap error:', err)
     return NextResponse.json({ error: 'Failed to generate analysis' }, { status: 500 })
+  }
+}
+
+// ── POST: contextual rejection analysis (recruiter notes + hired comparison) ──
+export async function POST(req: Request) {
+  const session = await auth()
+  if (!session || session.user.role !== 'candidate') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { applicationId } = await req.json()
+    if (!applicationId) return NextResponse.json({ error: 'applicationId required' }, { status: 400 })
+
+    await connectDB()
+
+    // Load the rejected application
+    const app = await Application.findOne({
+      _id: applicationId,
+      candidateId: session.user.id,
+    }).lean() as {
+      jobId: unknown
+      candidateId: unknown
+      matchScore?: { overall?: number }
+      breakdown?: Array<{ skill: string; match: string; weight: number }>
+      recruiterNotes?: string
+      stageHistory?: Array<{ stage: string; note?: string; timestamp: Date }>
+      outcome?: string
+    } | null
+
+    if (!app) return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+    if (app.outcome !== 'rejected') {
+      return NextResponse.json({ error: 'Application is not rejected' }, { status: 400 })
+    }
+
+    // Load job
+    const job = await Job.findById(app.jobId).lean() as {
+      title?: string
+      description?: string
+      requiredSkills?: Array<{ skill: string; weight: number; type: string }>
+    } | null
+    if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+
+    // Load candidate profile
+    const profile = await CandidateProfile.findOne({ userId: session.user.id }).lean() as {
+      skills?: Array<{ skill?: string; name?: string }>
+    } | null
+
+    const candidateSkillNames = (profile?.skills || [])
+      .map((s) => s.skill || s.name || '')
+      .filter(Boolean)
+
+    // Get missing skills from breakdown
+    const missingSkillsFromJD = (app.breakdown || [])
+      .filter((b) => b.match === 'none')
+      .map((b) => b.skill)
+
+    // Collect recruiter stage notes (non-empty notes from stageHistory, last 5)
+    const recruiterStageNotes = (app.stageHistory || [])
+      .map((h) => h.note || '')
+      .filter((n) => n.trim().length > 0)
+      .slice(-5)
+
+    // Fetch hired/shortlisted candidates for same job (top 3 by score)
+    const hiredApps = await Application.find({
+      jobId: app.jobId,
+      $or: [{ outcome: 'hired' }, { stage: 'shortlisted' }, { stage: 'interview' }],
+      candidateId: { $ne: session.user.id },
+    })
+      .sort({ 'matchScore.overall': -1 })
+      .limit(3)
+      .lean() as Array<{
+        candidateId: unknown
+        matchScore?: { overall?: number }
+      }>
+
+    // Get hired candidates' profiles and names
+    const hiredCandidatesSkills: Array<{ name: string; skills: string[] }> = []
+    for (const ha of hiredApps) {
+      const [hUser, hProfile] = await Promise.all([
+        User.findById(ha.candidateId).select('name').lean() as Promise<{ name?: string } | null>,
+        CandidateProfile.findOne({ userId: ha.candidateId }).select('skills').lean() as Promise<{
+          skills?: Array<{ skill?: string; name?: string }>
+        } | null>,
+      ])
+      if (hProfile?.skills?.length) {
+        hiredCandidatesSkills.push({
+          name: hUser?.name || 'Selected Candidate',
+          skills: hProfile.skills.map((s) => s.skill || s.name || '').filter(Boolean).slice(0, 10),
+        })
+      }
+    }
+
+    // Build the contextual rejection analysis using Groq
+    const prompt = PROMPTS.CONTEXTUAL_REJECTION({
+      jobTitle: job.title || 'this role',
+      jobDescription: job.description || '',
+      requiredSkills: job.requiredSkills || [],
+      candidateSkills: candidateSkillNames,
+      candidateMatchScore: app.matchScore?.overall ?? 0,
+      recruiterNotes: app.recruiterNotes || '',
+      recruiterStageNotes,
+      hiredCandidatesSkills,
+      missingSkillsFromJD,
+    })
+
+    interface RejectionAnalysis {
+      summary: string
+      recruiterFeedbackInsight: string
+      topGaps: Array<{
+        skill: string
+        gapType: string
+        reason: string
+        priority: string
+      }>
+      comparedToSelected: string | null
+      actionableSteps: string[]
+      encouragement: string
+    }
+
+    const analysis = await callGroqJSON<RejectionAnalysis>(MODELS.SMART, prompt)
+
+    // Cache the analysis into the application document
+    await Application.findByIdAndUpdate(applicationId, {
+      'skillGapPath.rejectionAnalysis': analysis,
+    })
+
+    return NextResponse.json(analysis)
+  } catch (err) {
+    console.error('Contextual rejection analysis error:', err)
+    return NextResponse.json({ error: 'Failed to generate rejection analysis' }, { status: 500 })
   }
 }

@@ -167,4 +167,65 @@ Explain in 3 clear sentences why ${candidateName} scored ${score}% for the ${job
 Skill breakdown: ${JSON.stringify(breakdown).slice(0, 500)}
 Be specific. Mention exact skills that matched and exact skills that are missing.
 Return only the explanation text, no JSON.`,
+
+  CONTEXTUAL_REJECTION: (params: {
+    jobTitle: string
+    jobDescription: string
+    requiredSkills: Array<{ skill: string; weight: number; type: string }>
+    candidateSkills: string[]
+    candidateMatchScore: number
+    recruiterNotes: string
+    recruiterStageNotes: string[]
+    hiredCandidatesSkills: Array<{ name: string; skills: string[] }>
+    missingSkillsFromJD: string[]
+  }) => `
+You are an AI career coach providing honest, constructive, and specific feedback to a rejected job candidate.
+
+Job: "${params.jobTitle}"
+Job Description (excerpt): ${params.jobDescription.slice(0, 800)}
+
+Required Skills (weight 3 = critical, 2 = important, 1 = nice-to-have):
+${params.requiredSkills.map(s => `  - ${s.skill} (weight: ${s.weight}, type: ${s.type})`).join('\n')}
+
+Candidate's Current Skills: ${params.candidateSkills.join(', ') || 'Not provided'}
+Candidate's Match Score: ${params.candidateMatchScore}%
+Skills Missing from JD: ${params.missingSkillsFromJD.join(', ') || 'None identified'}
+
+Recruiter's Personal Notes (private feedback shared for your growth):
+"${params.recruiterNotes || 'No specific notes provided.'}"
+
+Recruiter's Stage Comments (what was said at each review step):
+${params.recruiterStageNotes.length > 0 ? params.recruiterStageNotes.map((n, i) => `  ${i + 1}. "${n}"`).join('\n') : '  No stage comments.'}
+
+${params.hiredCandidatesSkills.length > 0 ? `Skills of candidates who were selected for this role:
+${params.hiredCandidatesSkills.map(c => `  - ${c.name}: ${c.skills.join(', ')}`).join('\n')}` : ''}
+
+Based on ALL of the above (recruiter feedback, JD requirements, comparison to selected candidates), generate a comprehensive, honest, and actionable rejection analysis.
+
+Return ONLY valid JSON:
+{
+  "summary": "2-3 sentence honest summary of why the candidate was rejected, referencing the recruiter's feedback and JD gaps specifically.",
+  "recruiterFeedbackInsight": "A 1-2 sentence interpretation of what the recruiter's notes reveal about what they were really looking for, written for the candidate.",
+  "topGaps": [
+    {
+      "skill": "Skill name",
+      "gapType": "missing | weak | experience_level",
+      "reason": "Specific reason this gap hurt the application, referencing JD weight or recruiter notes",
+      "priority": "high | medium | low"
+    }
+  ],
+  "comparedToSelected": ${params.hiredCandidatesSkills.length > 0 ? `"1-2 sentences comparing what the selected candidates had that this candidate lacked."` : `null`},
+  "actionableSteps": [
+    "Specific, concrete action step 1 (not generic, tied to this job's requirements)",
+    "Specific, concrete action step 2",
+    "Specific, concrete action step 3"
+  ],
+  "encouragement": "1 sentence of genuine, specific encouragement referencing their strengths."
+}
+
+Rules:
+- Be honest but constructive — this is meant to help the candidate grow
+- Make actionableSteps SPECIFIC to this job and recruiter feedback, not generic advice
+- If recruiter notes mention something specific (soft skill, attitude, experience level), address it directly
+- topGaps must have at least 2 items and at most 5`,
 }

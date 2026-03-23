@@ -15,6 +15,7 @@ const MEDAL = ['🥇', '🥈', '🥉']
 interface Applicant {
   _id: string
   stage: string
+  outcome?: string
   matchScore: number
   percentileRank?: number
   candidate?: { name: string; headline?: string; email?: string }
@@ -313,9 +314,19 @@ export default function ApplicationGraphPage() {
                     )}
 
                     {selectedApp.stage && (
-                      <div>
+                      <div className="mb-3">
                         <div className="text-xs text-muted-foreground mb-1">Stage</div>
                         <span className="capitalize text-sm font-medium">{selectedApp.stage.replace('_', ' ')}</span>
+                      </div>
+                    )}
+
+                    {selectedApp.outcome && (
+                      <div className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                        selectedApp.outcome === 'hired'
+                          ? 'border-green-500 bg-green-500/15 text-green-400'
+                          : 'border-red-500 bg-red-500/15 text-red-400'
+                      }`}>
+                        Application closed: <span className="capitalize">{selectedApp.outcome}</span>
                       </div>
                     )}
                   </>

@@ -130,6 +130,7 @@ export default function CandidateApplicationsPage() {
               {apps.map((app) => {
                 const stageIdx = STAGES.indexOf(app.stage)
                 const isRejected = app.stage === 'outcome' && app.outcome === 'rejected'
+                const isHired = app.stage === 'outcome' && app.outcome === 'hired'
                 const isPulsing = pulsing.has(app._id)
                 const appScore = app.matchScore?.overall ?? (app.matchScore as unknown as number) ?? 0
 
@@ -155,7 +156,10 @@ export default function CandidateApplicationsPage() {
                           </span>
                         )}
                         {isRejected && (
-                          <span className="text-xs text-red-400 font-medium">Rejected</span>
+                          <span className="text-xs text-red-400 font-medium bg-red-500/10 px-2 py-0.5 rounded-sm">Rejected</span>
+                        )}
+                        {isHired && (
+                          <span className="text-xs text-green-400 font-bold bg-green-500/10 px-2 py-0.5 rounded-sm uppercase tracking-wide">Hired!</span>
                         )}
                         <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${selectedApp === app._id ? 'rotate-90' : ''}`} />
                       </div>
@@ -270,14 +274,30 @@ export default function CandidateApplicationsPage() {
 
                   {/* Rejection skill gap */}
                   {selected.stage === 'outcome' && selected.outcome === 'rejected' && (
-                    <div className="rounded-xl border border-orange-500/30 bg-orange-500/8 p-3">
-                      <p className="text-xs text-orange-300 font-medium mb-2">Application closed — view your skill gap to improve</p>
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/8 p-4 space-y-2">
+                      <p className="text-xs text-red-300 font-semibold">Application Rejected</p>
+                      <p className="text-xs text-muted-foreground">Get AI-powered feedback using recruiter notes &amp; comparison to selected candidates.</p>
+                      <Link
+                        href={`/candidate/skill-gap?applicationId=${selected._id}&rejected=true`}
+                        className="block w-full rounded-lg bg-red-500/20 px-3 py-2 text-center text-xs text-red-300 hover:bg-red-500/30 transition-colors font-medium"
+                      >
+                        ✦ AI Rejection Analysis
+                      </Link>
                       <Link
                         href={`/candidate/skill-gap?applicationId=${selected._id}`}
-                        className="block w-full rounded-lg bg-orange-500/20 px-3 py-2 text-center text-xs text-orange-300 hover:bg-orange-500/30 transition-colors"
+                        className="block w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-muted-foreground hover:bg-white/10 transition-colors"
                       >
-                        View learning path →
+                        JD Skill Gap &amp; Learning Path
                       </Link>
+                    </div>
+                  )}
+
+                  {/* Hired notification */}
+                  {selected.stage === 'outcome' && selected.outcome === 'hired' && (
+                    <div className="rounded-xl border border-green-500/30 bg-green-500/8 p-4 space-y-2 text-center">
+                      <p className="text-sm text-green-400 font-bold uppercase tracking-widest">You're Hired! 🎉</p>
+                      <p className="text-xs text-muted-foreground pb-2">Congratulations! The recruiter has selected you for this role.</p>
+                      <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
                     </div>
                   )}
 

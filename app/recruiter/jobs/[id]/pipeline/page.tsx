@@ -37,11 +37,11 @@ export default function PipelinePage() {
   })
 
   const updateStage = useMutation({
-    mutationFn: ({ appId, stage, note }: { appId: string; stage: string; note?: string }) =>
+    mutationFn: ({ appId, stage, note, outcome }: { appId: string; stage: string; note?: string; outcome?: string }) =>
       fetch(`/api/applications/${appId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage, note }),
+        body: JSON.stringify({ stage, note, outcome }),
       }).then((r) => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applicants', jobId] })
@@ -60,6 +60,13 @@ export default function PipelinePage() {
 
   async function handleStageChange(applicationId: string, newStage: string) {
     await updateStage.mutateAsync({ appId: applicationId, stage: newStage, note: stageNote })
+  }
+
+  async function handleOutcomeChange(applicationId: string, outcome: 'hired' | 'rejected') {
+    await updateStage.mutateAsync({ appId: applicationId, stage: 'outcome', note: stageNote, outcome })
+    if (selectedApp) {
+      setSelectedApp({ ...selectedApp, stage: 'outcome', outcome })
+    }
   }
 
   async function handleBulkMove() {
@@ -345,6 +352,42 @@ export default function PipelinePage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Final Outcome */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Final Outcome</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleOutcomeChange(selectedApp._id, 'hired')}
+                disabled={selectedApp.outcome === 'hired'}
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  selectedApp.outcome === 'hired'
+                    ? 'border-green-500 bg-green-500/15 text-green-400'
+                    : 'border-green-500/30 bg-green-500/10 text-green-500 hover:bg-green-500/20'
+                }`}
+              >
+                <CheckCircle className="h-4 w-4" />
+                {selectedApp.outcome === 'hired' ? 'Hired' : 'Hire'}
+              </button>
+              <button
+                onClick={() => handleOutcomeChange(selectedApp._id, 'rejected')}
+                disabled={selectedApp.outcome === 'rejected'}
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  selectedApp.outcome === 'rejected'
+                    ? 'border-red-500 bg-red-500/15 text-red-400'
+                    : 'border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                }`}
+              >
+                <XCircle className="h-4 w-4" />
+                {selectedApp.outcome === 'rejected' ? 'Rejected' : 'Reject'}
+              </button>
+            </div>
+            {selectedApp.outcome && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Application closed as <strong>{selectedApp.outcome}</strong>.
+              </p>
+            )}
           </div>
 
           {/* Note for stage change */}

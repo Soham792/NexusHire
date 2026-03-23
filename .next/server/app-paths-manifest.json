@@ -1,11 +1,9 @@
 {
-  "/page": "app/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/candidate/opportunity-graph/page": "app/candidate/opportunity-graph/page.js",
-  "/candidate/dashboard/page": "app/candidate/dashboard/page.js",
-  "/candidate/profile/page": "app/candidate/profile/page.js",
-  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
+  "/recruiter/jobs/[id]/pipeline/page": "app/recruiter/jobs/[id]/pipeline/page.js",
+  "/api/jobs/[id]/route": "app/api/jobs/[id]/route.js",
+  "/api/jobs/[id]/applicants/route": "app/api/jobs/[id]/applicants/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/candidate/resume/route": "app/api/candidate/resume/route.js",
-  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js"
+  "/recruiter/candidates/page": "app/recruiter/candidates/page.js",
+  "/api/recruiter/candidates/route": "app/api/recruiter/candidates/route.js",
+  "/api/applications/[id]/stage/route": "app/api/applications/[id]/stage/route.js"
 }

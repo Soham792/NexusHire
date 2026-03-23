@@ -204,9 +204,9 @@ export default function OpportunityGraphPage() {
   }, [rawJobs, minScore, appliedIds])
 
   function openAutoApply() {
-    const top = jobs.filter((j) => j.score >= 60).slice(0, 5)
+    const top = jobs.slice(0, 5)
     if (!top.length) {
-      toast.error('No jobs with ≥60% match found. Lower your filter.')
+      toast.error('No jobs found. Lower your filter.')
       return
     }
     setAutoApplyJobs(top)
