@@ -11,20 +11,45 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/candidate/dashboard/page": [
+    "/(auth)/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/candidate/dashboard/page.js"
+      "static/chunks/app/(auth)/login/page.js"
+    ],
+    "/candidate/interview/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/candidate/interview/page.js"
+    ],
+    "/candidate/resume-builder/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/candidate/resume-builder/page.js"
+    ],
+    "/candidate/opportunity-graph/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/candidate/opportunity-graph/page.js"
     ],
     "/candidate/applications/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/candidate/applications/page.js"
     ],
-    "/candidate/interview/page": [
+    "/jobs/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/candidate/interview/page.js"
+      "static/chunks/app/jobs/[id]/page.js"
+    ],
+    "/jobs/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/jobs/page.js"
+    ],
+    "/candidate/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/candidate/dashboard/page.js"
     ]
   }
 }

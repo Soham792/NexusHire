@@ -1,13 +1,13 @@
 {
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/page": "app/page.js",
-  "/api/candidate/track-view/route": "app/api/candidate/track-view/route.js",
   "/candidate/dashboard/page": "app/candidate/dashboard/page.js",
-  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js",
-  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
+  "/jobs/page": "app/jobs/page.js",
   "/candidate/interview/page": "app/candidate/interview/page.js",
-  "/candidate/applications/page": "app/candidate/applications/page.js",
+  "/api/interview/groq-chat/route": "app/api/interview/groq-chat/route.js",
+  "/api/jobs/route": "app/api/jobs/route.js",
+  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
   "/api/applications/route": "app/api/applications/route.js",
-  "/api/jobs/[id]/route": "app/api/jobs/[id]/route.js",
-  "/api/interview/groq-chat/route": "app/api/interview/groq-chat/route.js"
+  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js",
+  "/candidate/applications/page": "app/candidate/applications/page.js",
+  "/api/jobs/[id]/route": "app/api/jobs/[id]/route.js"
 }

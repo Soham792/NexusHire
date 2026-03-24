@@ -438,15 +438,41 @@ function usePersonDetection({ videoRef, active, onViolation }: {
 // ─── SMALL UI COMPONENTS ──────────────────────────────────────────────────────
 function Bars({ active, color = '#818cf8' }: { active: boolean; color?: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2.5, height: 22 }}>
-      {[3, 5, 8, 11, 8, 5, 3, 5, 8].map((h, i) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 28 }}>
+      {[4, 7, 12, 18, 22, 18, 12, 7, 4, 7, 12].map((h, i) => (
         <div key={i} style={{
-          width: 3, borderRadius: 2, background: color,
-          height: active ? h * 2 + 2 : 3, transition: 'height .1s',
-          animation: active ? `barAnim ${0.33 + i * 0.07}s ease-in-out infinite alternate` : 'none',
+          width: 3.5, borderRadius: 4, background: color, opacity: active ? 1 : 0.3,
+          height: active ? h : 3,
+          transition: 'height .12s, opacity .3s',
+          animation: active ? `barAnim ${0.28 + i * 0.06}s ease-in-out infinite alternate` : 'none',
+          transformOrigin: 'bottom',
         }} />
       ))}
-      <style>{`@keyframes barAnim{from{transform:scaleY(.35)}to{transform:scaleY(1.4)}}`}</style>
+      <style>{`@keyframes barAnim{from{transform:scaleY(.3)}to{transform:scaleY(1.2)}}`}</style>
+    </div>
+  )
+}
+
+function MicOrb({ active }: { active: boolean }) {
+  return (
+    <div style={{ position: 'relative', width: 110, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {active && (
+        <>
+          <div style={{ position: 'absolute', width: 160, height: 160, borderRadius: '50%', background: 'rgba(52,211,153,.06)', animation: 'orbPulse 2.2s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', width: 135, height: 135, borderRadius: '50%', background: 'rgba(52,211,153,.1)', animation: 'orbPulse 2.2s ease-in-out infinite .55s' }} />
+        </>
+      )}
+      <div style={{
+        width: 110, height: 110, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40,
+        background: active ? 'radial-gradient(circle,rgba(52,211,153,.22) 0%,rgba(52,211,153,.06) 100%)' : 'rgba(255,255,255,.04)',
+        border: `2px solid ${active ? 'rgba(52,211,153,.5)' : 'rgba(255,255,255,.08)'}`,
+        boxShadow: active ? '0 0 40px rgba(52,211,153,.25)' : 'none',
+        transition: 'all .4s ease',
+        position: 'relative', zIndex: 1,
+      }}>
+        🎙️
+      </div>
+      <style>{`@keyframes orbPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.6}}`}</style>
     </div>
   )
 }
@@ -467,26 +493,27 @@ function ScoreRing({ pct, size = 112, stroke = 9, color }: { pct: number; size?:
 
 function ScoreLine({ label, icon, score }: { label: string; icon: string; score: number }) {
   const c = score >= 75 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171'
+  const bg = score >= 75 ? 'rgba(52,211,153,.08)' : score >= 50 ? 'rgba(251,191,36,.08)' : 'rgba(248,113,113,.08)'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 11 }}>
-      <span style={{ fontSize: 15, width: 22 }}>{icon}</span>
-      <span style={{ flex: 1, fontSize: 13, color: '#94a3b8' }}>{label}</span>
-      <div style={{ width: 90, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
-        <div style={{ width: `${score}%`, height: '100%', background: c, borderRadius: 2, transition: 'width 1.1s ease' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 13, padding: '10px 14px', borderRadius: 12, background: bg, border: `1px solid ${c}22` }}>
+      <span style={{ fontSize: 17, width: 24, flexShrink: 0 }}>{icon}</span>
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#cbd5e1' }}>{label}</span>
+      <div style={{ width: 120, height: 5, borderRadius: 3, background: 'rgba(255,255,255,.07)', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ width: `${score}%`, height: '100%', background: `linear-gradient(90deg,${c}99,${c})`, borderRadius: 3, transition: 'width 1.3s cubic-bezier(.4,0,.2,1)' }} />
       </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color: c, minWidth: 30, textAlign: 'right' }}>{score}</span>
+      <span style={{ fontSize: 14, fontWeight: 800, color: c, minWidth: 32, textAlign: 'right' }}>{score}</span>
     </div>
   )
 }
 
 // ─── SHARED STYLES ────────────────────────────────────────────────────────────
 const G = {
-  page:       { minHeight: '100vh', background: '#080810', fontFamily: "'DM Sans', system-ui, sans-serif", color: '#e2e8f0' },
-  card:       { background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 16, padding: '1.5rem', marginBottom: '1rem' },
-  input:      { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.05)', color: '#e2e8f0', fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical' as const, lineHeight: 1.5, boxSizing: 'border-box' as const },
-  label:      { fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '.07em', marginBottom: 7, display: 'block' },
-  btnPrimary: { width: '100%', padding: '13px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  btnGhost:   { padding: '9px 18px', borderRadius: 10, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.04)', color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
+  page:       { minHeight: '100vh', background: 'linear-gradient(160deg,#05050e 0%,#09091a 60%,#06060f 100%)', fontFamily: "'Inter', system-ui, sans-serif", color: '#e2e8f0' },
+  card:       { background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 20, padding: '1.5rem', marginBottom: '1rem', backdropFilter: 'blur(20px)' as const },
+  input:      { width: '100%', padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.04)', color: '#e2e8f0', fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical' as const, lineHeight: 1.6, boxSizing: 'border-box' as const },
+  label:      { fontSize: 11, fontWeight: 700, color: '#4a5568', textTransform: 'uppercase' as const, letterSpacing: '.08em', marginBottom: 8, display: 'block' },
+  btnPrimary: { width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '-.01em', boxShadow: '0 0 32px rgba(99,102,241,.3)' },
+  btnGhost:   { padding: '10px 20px', borderRadius: 12, border: '1px solid rgba(255,255,255,.09)', background: 'rgba(255,255,255,.04)', color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
 }
 
 // ─── VOICE INTERVIEW COMPONENT ────────────────────────────────────────────────
@@ -743,99 +770,110 @@ function VoiceInterview({ job, initialResumeText }: { job: Job; initialResumeTex
     return (
       <div style={G.page}>
         <Navbar />
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '1.5rem 1rem 3rem' }}>
-          <Link href="/candidate/applications" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', textDecoration: 'none', marginBottom: '1.5rem' }}>
-            <ArrowLeft style={{ width: 14, height: 14 }} /> Back to applications
+        <div style={{ maxWidth: 580, margin: '0 auto', padding: '1.5rem 1rem 4rem' }}>
+          <Link href="/candidate/applications" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', textDecoration: 'none', marginBottom: '2rem', transition: 'color .2s' }}>
+            <ArrowLeft style={{ width: 13, height: 13 }} /> Back to applications
           </Link>
 
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1.75rem' }}>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>🎤</div>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-.02em' }}>Practice Interview</h1>
-              <p style={{ margin: 0, fontSize: 13, color: '#475569' }}>{job.title} · {job.companyName}</p>
-            </div>
+          {/* ── Hero header ── */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ width: 72, height: 72, borderRadius: 22, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto 1.25rem', boxShadow: '0 0 40px rgba(99,102,241,.4)' }}>🎤</div>
+            <h1 style={{ margin: '0 0 6px', fontSize: 26, fontWeight: 800, letterSpacing: '-.03em', background: 'linear-gradient(135deg,#e2e8f0,#94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              AI Mock Interview
+            </h1>
+            <p style={{ margin: 0, fontSize: 14, color: '#475569' }}>
+              <span style={{ color: '#818cf8', fontWeight: 600 }}>{job.title}</span>
+              <span style={{ margin: '0 8px', color: '#334155' }}>·</span>
+              {job.companyName}
+            </p>
           </div>
 
-          {/* Job skills — auto-loaded */}
-          <div style={{ ...G.card, marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <p style={{ ...G.label, margin: 0 }}>🎯 Skills being tested</p>
-              <span style={{ fontSize: 11, background: 'rgba(52,211,153,.08)', border: '1px solid rgba(52,211,153,.2)', color: '#34d399', borderRadius: 20, padding: '2px 10px' }}>Auto-loaded from job</span>
+          {/* ── Skills being tested ── */}
+          <div style={{ ...G.card }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1' }}>Skills being tested</span>
+              <span style={{ fontSize: 11, background: 'rgba(52,211,153,.08)', border: '1px solid rgba(52,211,153,.2)', color: '#34d399', borderRadius: 20, padding: '3px 11px', fontWeight: 600 }}>Auto-loaded</span>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {skills.slice(0, 18).map(s => (
-                <span key={s} style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: 'rgba(99,102,241,.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,.25)' }}>{s}</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              {skills.slice(0, 20).map(s => (
+                <span key={s} style={{ fontSize: 12, padding: '5px 13px', borderRadius: 20, background: 'rgba(99,102,241,.1)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,.22)', fontWeight: 500 }}>{s}</span>
               ))}
             </div>
-
-            {/* Candidate resume indicator */}
             {resumeText && (
-              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#475569' }}>
-                <span style={{ color: '#34d399' }}>✓</span>
-                Resume &amp; skills loaded from your profile
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#475569' }}>
+                <span style={{ color: '#34d399', fontSize: 14 }}>✓</span>
+                Resume &amp; profile loaded
               </div>
             )}
           </div>
 
-          {/* How it works */}
-          <div style={{ ...G.card, marginBottom: '1rem' }}>
-            <p style={{ ...G.label, marginBottom: 12 }}>How it works</p>
-            {([['🔊', 'AI reads each question aloud (5 questions total)'], ['🎙️', 'You answer verbally — speech is transcribed live'], ['⏩', 'Click "Done" when finished speaking, or wait for auto-submit'], ['📊', 'Receive a detailed score report with feedback']] as [string, string][]).map(([ic, txt]) => (
-              <div key={txt} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 14, flexShrink: 0 }}>{ic}</span>
-                <span style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{txt}</span>
-              </div>
-            ))}
+          {/* ── How it works ── */}
+          <div style={{ ...G.card }}>
+            <p style={{ ...G.label, marginBottom: 14 }}>How it works</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {([
+                ['🔊', 'AI speaks each question aloud'],
+                ['🎙️', 'You answer verbally in real-time'],
+                ['⏩', 'Click Done or wait for auto-detect'],
+                ['📊', 'Get a full scored debrief report'],
+              ] as [string, string][]).map(([ic, txt]) => (
+                <div key={txt} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)' }}>
+                  <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{ic}</span>
+                  <span style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{txt}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Advanced options — collapsed by default */}
-          <div style={{ marginBottom: '1rem' }}>
+          {/* ── Advanced options ── */}
+          <div style={{ marginBottom: '1.25rem' }}>
             <button onClick={() => setShowAdvanced(v => !v)}
-              style={{ background: 'none', border: 'none', color: '#475569', fontSize: 13, cursor: 'pointer', padding: '6px 0', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ display: 'inline-block', transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>▶</span>
-              {showAdvanced ? 'Hide' : 'Edit JD / resume context'}
+              style={{ background: 'none', border: 'none', color: '#475569', fontSize: 12, cursor: 'pointer', padding: '6px 0', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ display: 'inline-block', transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s', fontSize: 10 }}>▶</span>
+              {showAdvanced ? 'Hide context' : 'Edit JD / resume context'}
             </button>
             {showAdvanced && (
-              <div style={{ ...G.card, marginTop: 8 }}>
+              <div style={{ ...G.card, marginTop: 10 }}>
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={G.label}>📄 Your Resume / Skills</label>
+                  <label style={G.label}>Your Resume / Skills</label>
                   <textarea value={resumeText} onChange={e => setResumeSynced(e.target.value)} rows={3} style={G.input} placeholder="Skills, experience, projects…" />
                 </div>
                 <div>
-                  <label style={G.label}>💼 Job Description</label>
+                  <label style={G.label}>Job Description</label>
                   <textarea value={jd} onChange={e => setJdSynced(e.target.value)} rows={4} style={G.input} placeholder="Paste JD or skill list…" />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Errors / warnings */}
+          {/* ── Warnings ── */}
           {!supported && (
-            <div style={{ background: 'rgba(251,191,36,.07)', border: '1px solid rgba(251,191,36,.2)', borderRadius: 10, padding: '10px 14px', marginBottom: '1rem', fontSize: 13, color: '#fbbf24' }}>
-              ⚠️ Voice recognition may not be fully supported. Use Chrome or Edge for best results.
+            <div style={{ background: 'rgba(251,191,36,.06)', border: '1px solid rgba(251,191,36,.18)', borderRadius: 12, padding: '11px 15px', marginBottom: '1rem', fontSize: 13, color: '#fbbf24', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span>⚠️</span> Voice recognition works best in Chrome or Edge.
             </div>
           )}
           {error && (
-            <div style={{ background: 'rgba(248,113,113,.07)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 10, padding: '10px 14px', marginBottom: '1rem', fontSize: 13, color: '#f87171' }}>
-              {error}
+            <div style={{ background: 'rgba(248,113,113,.06)', border: '1px solid rgba(248,113,113,.18)', borderRadius: 12, padding: '11px 15px', marginBottom: '1rem', fontSize: 13, color: '#f87171', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ flexShrink: 0 }}>⚠️</span> {error}
             </div>
           )}
 
-          {/* Action buttons */}
+          {/* ── Camera CTA ── */}
           {camStatus !== 'granted' ? (
-            <button onClick={() => requestCam()} style={{ ...G.btnPrimary, background: 'rgba(99,102,241,.14)', color: '#818cf8', border: '1px solid rgba(99,102,241,.3)', marginBottom: 10 }}>
-              📷 Enable Camera &amp; Microphone to begin
+            <button onClick={() => requestCam()}
+              style={{ ...G.btnPrimary, background: 'rgba(99,102,241,.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,.28)', boxShadow: 'none', marginBottom: 12, fontSize: 14 }}>
+              📷 Enable Camera to begin
             </button>
           ) : (
-            <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(52,211,153,.07)', border: '1px solid rgba(52,211,153,.2)', color: '#34d399', fontSize: 13, textAlign: 'center', marginBottom: 10 }}>
-              ✅ Camera &amp; Microphone ready
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '11px', borderRadius: 14, background: 'rgba(52,211,153,.06)', border: '1px solid rgba(52,211,153,.2)', color: '#34d399', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', display: 'inline-block', boxShadow: '0 0 8px #34d399' }} />
+              Camera ready
             </div>
           )}
 
           <button onClick={startInterview} disabled={loading || camStatus !== 'granted'}
-            style={{ ...G.btnPrimary, opacity: (loading || camStatus !== 'granted') ? 0.4 : 1, cursor: (loading || camStatus !== 'granted') ? 'not-allowed' : 'pointer', fontSize: 16 }}>
-            {loading ? '⏳ Generating questions…' : '🚀 Start Practice Interview'}
+            style={{ ...G.btnPrimary, opacity: (loading || camStatus !== 'granted') ? 0.35 : 1, cursor: (loading || camStatus !== 'granted') ? 'not-allowed' : 'pointer', fontSize: 16, padding: '15px' }}>
+            {loading ? '⏳ Generating questions…' : '🚀 Start Interview'}
           </button>
         </div>
       </div>
@@ -845,15 +883,23 @@ function VoiceInterview({ job, initialResumeText }: { job: Job; initialResumeTex
   // ── RENDER: PROCESSING ────────────────────────────────────────────────────
   if (stage === STAGE.PROCESSING) {
     return (
-      <div style={{ ...G.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div style={{ fontSize: 52, marginBottom: '1.25rem', display: 'inline-block', animation: 'spinAnim 2s linear infinite' }}>🧠</div>
-          <h3 style={{ fontWeight: 700, marginBottom: 8, fontSize: 19 }}>Analysing your interview…</h3>
-          <p style={{ color: '#475569', fontSize: 14 }}>Grading {transcript.length} answers · Generating personalised resources</p>
-          <div style={{ margin: '2rem auto', width: 220, height: 3, background: 'rgba(255,255,255,.06)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ width: '45%', height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 2, animation: 'slideAnim 1.5s ease-in-out infinite alternate' }} />
+      <div style={{ ...G.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ textAlign: 'center', padding: '2rem', maxWidth: 340 }}>
+          {/* Animated brain orb */}
+          <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 2rem' }}>
+            <div style={{ position: 'absolute', inset: -18, borderRadius: '50%', background: 'rgba(99,102,241,.06)', animation: 'orbPulse 2s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', background: 'rgba(99,102,241,.1)', animation: 'orbPulse 2s ease-in-out infinite .5s' }} />
+            <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'radial-gradient(circle,rgba(99,102,241,.25) 0%,rgba(99,102,241,.06) 100%)', border: '2px solid rgba(99,102,241,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, position: 'relative', zIndex: 1 }}>
+              🧠
+            </div>
           </div>
-          <style>{`@keyframes spinAnim{to{transform:rotate(360deg)}} @keyframes slideAnim{from{transform:translateX(-100%)}to{transform:translateX(250%)}}`}</style>
+          <h3 style={{ fontWeight: 800, marginBottom: 10, fontSize: 20, letterSpacing: '-.02em' }}>Analysing your interview…</h3>
+          <p style={{ color: '#475569', fontSize: 14, lineHeight: 1.6, marginBottom: '2rem' }}>Grading {transcript.length} answers · Generating personalised resources</p>
+          {/* Shimmer bar */}
+          <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,.05)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: '60%', height: '100%', background: 'linear-gradient(90deg,transparent,#6366f1,#8b5cf6,transparent)', borderRadius: 4, animation: 'shimmer 1.6s ease-in-out infinite' }} />
+          </div>
+          <style>{`@keyframes orbPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:.6}} @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}`}</style>
         </div>
       </div>
     )
@@ -864,164 +910,189 @@ function VoiceInterview({ job, initialResumeText }: { job: Job; initialResumeTex
     const isSpeaking  = stage === STAGE.SPEAKING
     const isListening = stage === STAGE.LISTENING
     const isBetween   = stage === STAGE.BETWEEN
-    const progress    = ((qIdx + (isBetween ? 1 : 0)) / questions.length) * 100
     const totalViol   = violations.tab + violations.fs + violations.face
 
     return (
-      <div style={G.page}>
-        {/* Camera background */}
+      <div style={{ ...G.page, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Hidden face detection video */}
+        {camStream && <video ref={faceVidCb} autoPlay muted playsInline style={{ position: 'fixed', opacity: 0, pointerEvents: 'none', width: 1, height: 1, top: -9999 }} />}
+
+        {/* ── Floating camera PiP ── */}
         {camStream && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', background: '#000' }}>
-            <video ref={bgVidCb} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', opacity: 0.3 }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 10%, rgba(8,8,16,.9) 75%)' }} />
-            <div style={{ position: 'absolute', top: 18, left: 18, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(10px)', borderRadius: 20, padding: '5px 13px', border: '1px solid rgba(255,255,255,.08)' }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#f87171', animation: 'pulseAnim 1.8s ease-in-out infinite' }} />
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: '#e2e8f0' }}>LIVE</span>
+          <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 50, borderRadius: 16, overflow: 'hidden', width: 160, height: 108, border: '2px solid rgba(255,255,255,.12)', boxShadow: '0 8px 32px rgba(0,0,0,.6)', background: '#000' }}>
+            <video ref={bgVidCb} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+            <div style={{ position: 'absolute', top: 7, left: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f87171', animation: 'dotPulse 1.8s ease-in-out infinite' }} />
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.1em', color: 'rgba(255,255,255,.8)' }}>LIVE</span>
             </div>
           </div>
         )}
-        {camStream && <video ref={faceVidCb} autoPlay muted playsInline style={{ position: 'fixed', opacity: 0, pointerEvents: 'none', width: 1, height: 1, top: -9999 }} />}
 
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 620, margin: '0 auto', padding: '1.25rem 1rem' }}>
+        {/* ── Top bar ── */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,.3)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 40 }}>
+          {/* Step dots */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {questions.map((_, i) => {
+              const done = i < qIdx || (i === qIdx && isBetween)
+              const cur  = i === qIdx && !isBetween
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: cur ? 28 : 8, height: 8, borderRadius: 4,
+                    background: done ? '#6366f1' : cur ? 'linear-gradient(90deg,#6366f1,#8b5cf6)' : 'rgba(255,255,255,.1)',
+                    transition: 'all .4s ease',
+                    boxShadow: cur ? '0 0 10px rgba(99,102,241,.5)' : 'none',
+                  }} />
+                </div>
+              )
+            })}
+            <span style={{ marginLeft: 6, fontSize: 12, color: '#475569', fontWeight: 600 }}>
+              {qIdx + 1}/{questions.length}
+            </span>
+          </div>
+
+          {/* Right controls */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {totalViol > 0 && (
+              <span style={{ fontSize: 11, color: '#f87171', background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 20, padding: '3px 10px' }}>
+                ⚠️ {totalViol}/3
+              </span>
+            )}
+            <span style={{ fontSize: 13, color: '#475569', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(elapsed)}</span>
+            <button onClick={() => setMuted(m => !m)} style={{ ...G.btnGhost, padding: '6px 14px', fontSize: 12, borderRadius: 20 }}>
+              {muted ? '🔇' : '🔊'}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Main content ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem 6rem', maxWidth: 680, margin: '0 auto', width: '100%' }}>
+
           {/* Violation warning */}
           {warning && (
-            <div style={{ background: autoSubRef.current ? 'rgba(239,68,68,.1)' : 'rgba(251,191,36,.08)', border: `1px solid ${autoSubRef.current ? 'rgba(239,68,68,.35)' : 'rgba(251,191,36,.25)'}`, borderRadius: 12, padding: '11px 16px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 10, animation: 'shakeAnim .5s' }}>
-              <span style={{ fontSize: 20 }}>{autoSubRef.current ? '🚫' : '⚠️'}</span>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: autoSubRef.current ? '#f87171' : '#fbbf24' }}>{warning}</p>
+            <div style={{ width: '100%', background: autoSubRef.current ? 'rgba(239,68,68,.1)' : 'rgba(251,191,36,.07)', border: `1px solid ${autoSubRef.current ? 'rgba(239,68,68,.3)' : 'rgba(251,191,36,.22)'}`, borderRadius: 14, padding: '12px 16px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 12, animation: 'shakeAnim .5s' }}>
+              <span style={{ fontSize: 22 }}>{autoSubRef.current ? '🚫' : '⚠️'}</span>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: autoSubRef.current ? '#f87171' : '#fbbf24' }}>{warning}</p>
             </div>
           )}
 
-          {totalViol > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderRadius: 8, background: 'rgba(248,113,113,.07)', border: '1px solid rgba(248,113,113,.15)', marginBottom: '0.75rem', fontSize: 12, color: '#f87171' }}>
-              🛡️ Violations: {totalViol}/3 &nbsp;(tab: {violations.tab} · fullscreen: {violations.fs} · camera: {violations.face})
-            </div>
-          )}
+          {/* ── State badge ── */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            {isSpeaking && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 20, background: 'rgba(99,102,241,.12)', border: '1px solid rgba(99,102,241,.3)', color: '#a5b4fc', fontSize: 13, fontWeight: 600 }}>
+                <Bars active color="#818cf8" />
+                AI is speaking…
+              </div>
+            )}
+            {isListening && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 20, background: 'rgba(52,211,153,.1)', border: '1px solid rgba(52,211,153,.3)', color: '#34d399', fontSize: 13, fontWeight: 600 }}>
+                <Bars active color="#34d399" />
+                Listening — speak now
+              </div>
+            )}
+            {isBetween && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 18px', borderRadius: 20, background: 'rgba(251,191,36,.08)', border: '1px solid rgba(251,191,36,.22)', color: '#fbbf24', fontSize: 13, fontWeight: 600 }}>
+                ✓ Answer recorded
+              </div>
+            )}
+          </div>
 
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+          {/* ── Question ── */}
+          <div style={{ ...G.card, width: '100%', padding: '2rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)' }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.08em' }}>
               {job.title} · {job.companyName}
             </p>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(elapsed)}</span>
-              <button onClick={() => setMuted(m => !m)} style={{ ...G.btnGhost, padding: '5px 12px', fontSize: 12 }}>
-                {muted ? '🔇 Unmute' : '🔊 Mute AI'}
-              </button>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div style={{ height: 3, background: 'rgba(255,255,255,.06)', borderRadius: 2, marginBottom: '1.25rem', overflow: 'hidden' }}>
-            <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', transition: 'width .6s ease', borderRadius: 2 }} />
-          </div>
-
-          {/* Question card */}
-          <div style={{ ...G.card, backdropFilter: 'blur(14px)', background: 'rgba(255,255,255,.05)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.07em' }}>
-                Question {qIdx + 1} / {questions.length}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: isSpeaking ? '#818cf8' : isListening ? '#34d399' : '#475569' }}>
-                {isSpeaking ? 'AI speaking' : isListening ? '🎤 Your turn' : 'Review answer'}
-              </span>
-            </div>
-
-            <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.7, margin: '0 0 1.25rem', color: '#f1f5f9' }}>
+            <p style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.65, color: '#f1f5f9', letterSpacing: '-.01em' }}>
               {questions[qIdx]}
             </p>
-
-            {/* SPEAKING state */}
-            {isSpeaking && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 11, background: 'rgba(99,102,241,.09)', border: '1px solid rgba(99,102,241,.2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Bars active color="#818cf8" />
-                  <span style={{ fontSize: 13, color: '#818cf8' }}>AI reading question…</span>
-                </div>
-                <button onClick={() => { stopSpeaking(); setStage(STAGE.LISTENING) }}
-                  style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(99,102,241,.35)', background: 'rgba(99,102,241,.14)', color: '#818cf8', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  🎤 Answer now
-                </button>
-              </div>
-            )}
-
-            {/* LISTENING state */}
-            {isListening && (
-              <div style={{ borderRadius: 11, background: 'rgba(52,211,153,.07)', border: '1px solid rgba(52,211,153,.22)', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Bars active color="#34d399" />
-                    <div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#34d399', display: 'block' }}>🎙️ Listening — speak your answer</span>
-                      {sttMode === 'whisper' && (
-                        <span style={{ fontSize: 11, color: '#475569' }}>Recording via microphone · transcript shown on Done</span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <button onClick={() => { stopSpeaking(); speakQ(qIdx) }}
-                      style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(99,102,241,.3)', background: 'rgba(99,102,241,.1)', color: '#818cf8', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      🔊 Replay
-                    </button>
-                    <button onClick={submitAnswer}
-                      style={{ padding: '7px 18px', borderRadius: 8, border: 'none', background: '#34d399', color: '#080810', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      Done ✓
-                    </button>
-                  </div>
-                </div>
-                <div style={{ padding: '0 14px 10px' }}>
-                  {liveText
-                    ? <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', fontStyle: 'italic', lineHeight: 1.6 }}>&#34;{liveText}&#34;</p>
-                    : <p style={{ margin: 0, fontSize: 12, color: '#1e293b' }}>Your words will appear here as you speak…</p>
-                  }
-                </div>
-                <div style={{ padding: '0 14px 12px' }}>
-                  <button onClick={skipQuestion} style={{ background: 'none', border: 'none', color: '#1e293b', fontSize: 12, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
-                    Skip this question →
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* BETWEEN state */}
-            {isBetween && transcript.length > 0 && (
-              <div>
-                <div style={{ padding: '12px 14px', borderRadius: 11, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', marginBottom: 12 }}>
-                  <p style={{ margin: '0 0 5px', fontSize: 11, color: '#334155' }}>Your answer:</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', lineHeight: 1.65 }}>
-                    {transcript[transcript.length - 1].answer || <em style={{ color: '#334155' }}>No answer recorded</em>}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={reAnswer} style={{ ...G.btnGhost, flex: 1 }}>↩ Re-answer</button>
-                  <button onClick={nextQuestion} style={{ flex: 2, padding: '10px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    {qIdx + 1 < questions.length ? 'Next Question →' : 'Finish & Get Report →'}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Previous answers */}
-          {transcript.length > 0 && (
-            <details style={G.card}>
-              <summary style={{ fontSize: 13, color: '#475569', cursor: 'pointer' }}>
-                Answered {transcript.length} of {questions.length}
+          {/* ── SPEAKING: skip to answer ── */}
+          {isSpeaking && (
+            <button onClick={() => { stopSpeaking(); setStage(STAGE.LISTENING) }}
+              style={{ padding: '11px 28px', borderRadius: 12, border: '1px solid rgba(99,102,241,.3)', background: 'rgba(99,102,241,.1)', color: '#a5b4fc', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              🎤 Answer now (skip AI reading)
+            </button>
+          )}
+
+          {/* ── LISTENING: mic orb + transcript ── */}
+          {isListening && (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+              <MicOrb active />
+
+              {/* Live transcript */}
+              <div style={{ width: '100%', minHeight: 64, padding: '14px 18px', borderRadius: 14, background: 'rgba(52,211,153,.05)', border: '1px solid rgba(52,211,153,.15)', textAlign: 'center' }}>
+                {liveText
+                  ? <p style={{ margin: 0, fontSize: 15, color: '#94a3b8', fontStyle: 'italic', lineHeight: 1.65 }}>"{liveText}"</p>
+                  : <p style={{ margin: 0, fontSize: 13, color: '#1e3a2f' }}>Your words will appear here as you speak…</p>
+                }
+                {sttMode === 'whisper' && (
+                  <p style={{ margin: '6px 0 0', fontSize: 11, color: '#1e3a2f' }}>Recording via microphone</p>
+                )}
+              </div>
+
+              {/* Controls */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button onClick={() => { stopSpeaking(); speakQ(qIdx) }}
+                  style={{ ...G.btnGhost, fontSize: 13 }}>
+                  🔊 Replay
+                </button>
+                <button onClick={skipQuestion}
+                  style={{ ...G.btnGhost, fontSize: 13, color: '#334155', borderColor: 'rgba(255,255,255,.05)' }}>
+                  Skip →
+                </button>
+                <button onClick={submitAnswer}
+                  style={{ padding: '11px 32px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#34d399,#059669)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 0 24px rgba(52,211,153,.3)' }}>
+                  Done ✓
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── BETWEEN: answer review ── */}
+          {isBetween && transcript.length > 0 && (
+            <div style={{ width: '100%' }}>
+              <div style={{ padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', marginBottom: '1rem' }}>
+                <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.07em' }}>Your answer</p>
+                <p style={{ margin: 0, fontSize: 14, color: '#94a3b8', lineHeight: 1.7 }}>
+                  {transcript[transcript.length - 1].answer || <em style={{ color: '#334155' }}>No answer recorded</em>}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={reAnswer} style={{ ...G.btnGhost, flex: 1, textAlign: 'center' as const }}>↩ Re-answer</button>
+                <button onClick={nextQuestion}
+                  style={{ flex: 2, padding: '12px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 0 24px rgba(99,102,241,.35)' }}>
+                  {qIdx + 1 < questions.length ? 'Next Question →' : '✨ Finish & Get Report →'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Previous answers accordion ── */}
+        {transcript.length > 0 && (
+          <div style={{ maxWidth: 680, margin: '0 auto', width: '100%', padding: '0 1rem 2rem' }}>
+            <details style={{ ...G.card, marginBottom: 0 }}>
+              <summary style={{ fontSize: 13, color: '#475569', cursor: 'pointer', fontWeight: 600 }}>
+                {transcript.length} answered · {questions.length - transcript.length} remaining
               </summary>
               <div style={{ marginTop: '1rem' }}>
                 {transcript.map((t, i) => (
-                  <div key={i} style={{ borderLeft: '2px solid rgba(99,102,241,.25)', paddingLeft: 12, marginBottom: '1rem' }}>
-                    <p style={{ margin: '0 0 4px', fontSize: 11, color: '#334155' }}>Q{i + 1}</p>
-                    <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 500, color: '#e2e8f0' }}>{t.question}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>{t.answer}</p>
+                  <div key={i} style={{ borderLeft: '2px solid rgba(99,102,241,.3)', paddingLeft: 14, marginBottom: '1rem' }}>
+                    <p style={{ margin: '0 0 4px', fontSize: 11, color: '#334155', fontWeight: 700 }}>Q{i + 1}</p>
+                    <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>{t.question}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>{t.answer}</p>
                   </div>
                 ))}
               </div>
             </details>
-          )}
-        </div>
+          </div>
+        )}
+
         <style>{`
-          @keyframes pulseAnim{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.35)}}
-          @keyframes shakeAnim{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+          @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.5)}}
+          @keyframes shakeAnim{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+          @keyframes orbPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.6}}
         `}</style>
       </div>
     )
@@ -1029,87 +1100,116 @@ function VoiceInterview({ job, initialResumeText }: { job: Job; initialResumeTex
 
   // ── RENDER: REPORT ────────────────────────────────────────────────────────
   if (stage === STAGE.REPORT && feedback) {
-    const score = feedback.overallScore ?? 0
-    const sc    = score >= 75 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171'
+    const score  = feedback.overallScore ?? 0
+    const sc     = score >= 75 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171'
+    const scBg   = score >= 75 ? 'rgba(52,211,153,.07)' : score >= 50 ? 'rgba(251,191,36,.07)' : 'rgba(248,113,113,.07)'
+    const grade  = score >= 85 ? 'Excellent' : score >= 70 ? 'Good' : score >= 50 ? 'Fair' : 'Needs Work'
 
     return (
       <div style={G.page}>
         <Navbar />
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '2rem 1rem' }}>
+        <div style={{ maxWidth: 660, margin: '0 auto', padding: '2rem 1rem 4rem' }}>
 
-          <div style={{ ...G.card, textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.07em' }}>
+          {/* ── Score hero ── */}
+          <div style={{ ...G.card, textAlign: 'center', padding: '2.5rem 2rem', background: scBg, border: `1px solid ${sc}22`, marginBottom: '1.5rem' }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '.08em' }}>
               {job.title} · {job.companyName}
             </p>
-            <h2 style={{ margin: '0 0 1.75rem', fontSize: 22, fontWeight: 700, letterSpacing: '-.02em' }}>Interview Complete</h2>
-            <div style={{ display: 'inline-flex', position: 'relative', marginBottom: '1.25rem' }}>
-              <ScoreRing pct={score} size={116} stroke={9} color={sc} />
+            <h2 style={{ margin: '0 0 2rem', fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' }}>Interview Complete</h2>
+
+            <div style={{ display: 'inline-flex', position: 'relative', marginBottom: '1rem' }}>
+              <ScoreRing pct={score} size={140} stroke={11} color={sc} />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 28, fontWeight: 700, color: sc }}>{score}</span>
-                <span style={{ fontSize: 11, color: '#334155' }}>/ 100</span>
+                <span style={{ fontSize: 38, fontWeight: 900, color: sc, lineHeight: 1 }}>{score}</span>
+                <span style={{ fontSize: 12, color: '#334155', marginTop: 2 }}>/ 100</span>
               </div>
             </div>
-            <p style={{ margin: '0 0 1.5rem', fontSize: 14, color: '#64748b', lineHeight: 1.65, maxWidth: 420, marginInline: 'auto' }}>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: sc, background: `${sc}18`, border: `1px solid ${sc}40`, borderRadius: 20, padding: '5px 18px', letterSpacing: '.02em' }}>
+                {grade}
+              </span>
+            </div>
+
+            <p style={{ margin: '0 auto 1rem', fontSize: 14, color: '#64748b', lineHeight: 1.7, maxWidth: 460 }}>
               {feedback.overallAssessment}
             </p>
+
             {feedback.violations && Object.values(feedback.violations).some(v => v > 0) && (
-              <p style={{ fontSize: 11, color: '#334155' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#334155' }}>
                 Violations — Tab: {feedback.violations.tab} · Fullscreen: {feedback.violations.fs} · Camera: {feedback.violations.face}
-                {feedback.autoSubmitted && <span style={{ color: '#f87171', marginLeft: 8 }}>⚠️ Auto-submitted</span>}
+                {feedback.autoSubmitted && <span style={{ color: '#f87171', marginLeft: 10 }}>⚠️ Auto-submitted</span>}
               </p>
             )}
           </div>
 
-          <div style={G.card}>
-            <p style={{ ...G.label, marginBottom: 16 }}>Category Scores</p>
+          {/* ── Category scores ── */}
+          <div style={{ ...G.card }}>
+            <p style={{ ...G.label, marginBottom: 14 }}>Category Scores</p>
             {SCORE_CATS.map(c => <ScoreLine key={c.key} label={c.label} icon={c.icon} score={feedback.categoryScores?.[c.key] ?? 0} />)}
           </div>
 
+          {/* ── Strengths + Improvements ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={G.card}>
-              <p style={{ ...G.label, color: '#34d399', marginBottom: 10 }}>✅ Strengths</p>
-              {(feedback.strengths || []).map((s, i) => <p key={i} style={{ margin: '0 0 7px', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>• {s}</p>)}
+            <div style={{ ...G.card, marginBottom: 0, background: 'rgba(52,211,153,.04)', border: '1px solid rgba(52,211,153,.15)' }}>
+              <p style={{ ...G.label, color: '#34d399', marginBottom: 12 }}>✅ Strengths</p>
+              {(feedback.strengths || []).map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+                  <span style={{ color: '#34d399', flexShrink: 0, marginTop: 1 }}>•</span>
+                  <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
+                </div>
+              ))}
             </div>
-            <div style={G.card}>
-              <p style={{ ...G.label, color: '#f87171', marginBottom: 10 }}>📈 To Improve</p>
-              {(feedback.improvements || []).map((s, i) => <p key={i} style={{ margin: '0 0 7px', fontSize: 12, color: '#94a3b8', lineHeight: 1.5 }}>• {s}</p>)}
+            <div style={{ ...G.card, marginBottom: 0, background: 'rgba(248,113,113,.04)', border: '1px solid rgba(248,113,113,.15)' }}>
+              <p style={{ ...G.label, color: '#f87171', marginBottom: 12 }}>📈 To Improve</p>
+              {(feedback.improvements || []).map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+                  <span style={{ color: '#f87171', flexShrink: 0, marginTop: 1 }}>•</span>
+                  <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={G.card}>
-            <p style={{ ...G.label, marginBottom: 16 }}>Question Breakdown</p>
+          {/* ── Question breakdown ── */}
+          <div style={{ ...G.card, marginTop: '1rem' }}>
+            <p style={{ ...G.label, marginBottom: '1.25rem' }}>Question Breakdown</p>
             {(feedback.perQuestionFeedback || []).map((q, i) => {
-              const qc = q.score >= 70 ? '#34d399' : q.score >= 40 ? '#fbbf24' : '#f87171'
+              const qc  = q.score >= 70 ? '#34d399' : q.score >= 40 ? '#fbbf24' : '#f87171'
+              const qbg = q.score >= 70 ? 'rgba(52,211,153,.04)' : q.score >= 40 ? 'rgba(251,191,36,.04)' : 'rgba(248,113,113,.04)'
               return (
-                <div key={i} style={{ borderLeft: `3px solid ${qc}`, paddingLeft: 14, marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, color: '#334155' }}>Q{i + 1}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: qc }}>{q.score}/100</span>
+                <div key={i} style={{ borderLeft: `3px solid ${qc}`, paddingLeft: 16, marginBottom: '1.75rem', paddingTop: 4, paddingBottom: 4, background: qbg, borderRadius: '0 12px 12px 0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Question {i + 1}</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: qc, background: `${qc}18`, borderRadius: 20, padding: '2px 12px' }}>{q.score}/100</span>
                   </div>
-                  <p style={{ margin: '0 0 5px', fontSize: 14, fontWeight: 600, color: '#e2e8f0', lineHeight: 1.5 }}>{q.question}</p>
-                  <p style={{ margin: '0 0 6px', fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>{q.feedback}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: '#334155', lineHeight: 1.5 }}>
-                    <strong style={{ color: '#475569' }}>Ideal: </strong>{q.idealAnswer}
-                  </p>
+                  <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 600, color: '#e2e8f0', lineHeight: 1.55 }}>{q.question}</p>
+                  <p style={{ margin: '0 0 8px', fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>{q.feedback}</p>
+                  <div style={{ background: 'rgba(255,255,255,.03)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(255,255,255,.06)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>Ideal answer: </span>
+                    <span style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>{q.idealAnswer}</span>
+                  </div>
                 </div>
               )
             })}
           </div>
 
+          {/* ── Learning resources ── */}
           {(feedback.learningResources || []).length > 0 && (
-            <div style={G.card}>
-              <p style={{ ...G.label, marginBottom: 16 }}>📚 Learning Resources</p>
+            <div style={{ ...G.card }}>
+              <p style={{ ...G.label, marginBottom: '1.25rem' }}>📚 Learning Resources</p>
               {feedback.learningResources.map((item, i) => (
-                <div key={i} style={{ marginBottom: '1.25rem' }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#818cf8' }}>{item.skill}</p>
+                <div key={i} style={{ marginBottom: '1.5rem' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#a5b4fc' }}>{item.skill}</p>
                   {(item.resources || []).map((r, j) => {
                     let host = ''
                     try { host = new URL(r.url).hostname.replace('www.', '') } catch (_) {}
                     return (
-                      <a key={j} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 11px', borderRadius: 9, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', marginBottom: 5, textDecoration: 'none', color: '#94a3b8', fontSize: 12 }}>
-                        <span>{r.type === 'video' ? '▶️' : r.type === 'docs' ? '📖' : '🔗'}</span>
-                        <span style={{ flex: 1 }}>{r.title}</span>
-                        <span style={{ color: '#334155', fontSize: 11 }}>{host}</span>
+                      <a key={j} href={r.url} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', marginBottom: 7, textDecoration: 'none', transition: 'background .15s' }}>
+                        <span style={{ fontSize: 18, flexShrink: 0 }}>{r.type === 'video' ? '▶️' : r.type === 'docs' ? '📖' : '🔗'}</span>
+                        <span style={{ flex: 1, fontSize: 13, color: '#cbd5e1', fontWeight: 500 }}>{r.title}</span>
+                        <span style={{ fontSize: 11, color: '#334155', background: 'rgba(255,255,255,.04)', borderRadius: 6, padding: '2px 8px', flexShrink: 0 }}>{host}</span>
                       </a>
                     )
                   })}
@@ -1118,21 +1218,23 @@ function VoiceInterview({ job, initialResumeText }: { job: Job; initialResumeTex
             </div>
           )}
 
+          {/* ── Trending technologies ── */}
           {(feedback.trendingTechnologies || []).length > 0 && (
-            <div style={G.card}>
-              <p style={{ ...G.label, marginBottom: 16 }}>🚀 Trending Technologies</p>
+            <div style={{ ...G.card }}>
+              <p style={{ ...G.label, marginBottom: '1.25rem' }}>🚀 Trending Technologies</p>
               {feedback.trendingTechnologies.map((t, i) => {
                 let host = ''
                 try { host = new URL(t.resource?.url || '').hostname.replace('www.', '') } catch (_) {}
                 return (
-                  <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: i < feedback.trendingTechnologies.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none' }}>
+                  <div key={i} style={{ display: 'flex', gap: 14, padding: '12px 0', borderBottom: i < feedback.trendingTechnologies.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
-                      <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 700 }}>{t.name}</p>
-                      <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>{t.reason}</p>
+                      <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700 }}>{t.name}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.55 }}>{t.reason}</p>
                     </div>
                     {t.resource?.url && (
-                      <a href={t.resource.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '7px 11px', borderRadius: 9, background: 'rgba(99,102,241,.09)', border: '1px solid rgba(99,102,241,.18)', textDecoration: 'none', color: '#818cf8', fontSize: 11, whiteSpace: 'nowrap' }}>
-                        <span>{t.resource.type === 'video' ? '▶️' : '📖'}</span>
+                      <a href={t.resource.url} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 14px', borderRadius: 12, background: 'rgba(99,102,241,.09)', border: '1px solid rgba(99,102,241,.2)', textDecoration: 'none', color: '#818cf8', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <span style={{ fontSize: 16 }}>{t.resource.type === 'video' ? '▶️' : '📖'}</span>
                         <span>{host}</span>
                       </a>
                     )}
@@ -1142,36 +1244,40 @@ function VoiceInterview({ job, initialResumeText }: { job: Job; initialResumeTex
             </div>
           )}
 
-          <details style={G.card}>
-            <summary style={{ fontSize: 13, color: '#475569', cursor: 'pointer' }}>View full transcript ({transcript.length} questions)</summary>
-            <div style={{ marginTop: '1rem' }}>
+          {/* ── Transcript ── */}
+          <details style={{ ...G.card }}>
+            <summary style={{ fontSize: 13, color: '#475569', cursor: 'pointer', fontWeight: 600 }}>
+              View full transcript ({transcript.length} questions)
+            </summary>
+            <div style={{ marginTop: '1.25rem' }}>
               {transcript.map((t, i) => (
-                <div key={i} style={{ borderLeft: '2px solid rgba(99,102,241,.25)', paddingLeft: 12, marginBottom: '1.25rem' }}>
-                  <p style={{ margin: '0 0 4px', fontSize: 11, color: '#334155' }}>Q{i + 1}</p>
-                  <p style={{ margin: '0 0 5px', fontSize: 13, fontWeight: 500 }}>{t.question}</p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#475569' }}>{t.answer}</p>
+                <div key={i} style={{ borderLeft: '2px solid rgba(99,102,241,.3)', paddingLeft: 14, marginBottom: '1.5rem' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#334155' }}>Q{i + 1}</p>
+                  <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{t.question}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.6 }}>{t.answer}</p>
                 </div>
               ))}
             </div>
           </details>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={reset} style={{ ...G.btnGhost, flex: 1 }}>Retry Interview</button>
+          {/* ── Actions ── */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={reset} style={{ ...G.btnGhost, flex: 1, textAlign: 'center' as const }}>↩ Retry</button>
             <button onClick={() => {
               const txt = [
                 `Interview Report — ${job.title} at ${job.companyName}`,
-                `Overall Score: ${score}/100`,
-                `\nCategories:`,
+                `Overall Score: ${score}/100 (${grade})`,
+                `\nCategory Scores:`,
                 ...SCORE_CATS.map(c => `  ${c.label}: ${feedback.categoryScores?.[c.key] ?? 0}/100`),
-                `\nAssessment: ${feedback.overallAssessment}`,
+                `\nAssessment:\n  ${feedback.overallAssessment}`,
                 `\nStrengths:\n${(feedback.strengths || []).map(s => '  • ' + s).join('\n')}`,
                 `\nImprovements:\n${(feedback.improvements || []).map(s => '  • ' + s).join('\n')}`,
               ].join('\n')
               const a = document.createElement('a')
               a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }))
               a.download = 'interview-report.txt'; a.click()
-            }} style={{ ...G.btnPrimary, flex: 1 }}>
-              Download Report ↓
+            }} style={{ ...G.btnPrimary, flex: 2, boxShadow: 'none' }}>
+              ↓ Download Report
             </button>
           </div>
 
