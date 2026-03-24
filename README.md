@@ -23,6 +23,7 @@
 - **One-Click Offers:** Instant professional PDF offer letter generation attached seamlessly to "You're Hired" emails.
 
 ### 👤 For Candidates
+- **AI Mock Interviewer:** An interactive, voice-to-voice 3D AI interviewer that dynamically asks technical and behavioral questions specifically tailored to the candidate's resume and the target job description.
 - **Deep Resume Parsing:** Extracts skills, categorizes them, standardizes proficiencies, and aligns past experience using custom AI pipelines.
 - **Skill Gap & Rejection Analysis:** If rejected, candidates don't just get a generic refusal; they receive an AI-generated personalized learning pathway explaining exactly *why* based on recruiter notes and missing JD variables.
 - **Transparent Tracking:** Candidates get real-time email triggers and dynamic UI indicators for the precise stage their application is at.
@@ -49,7 +50,7 @@ This application is built with a deep, modern full-stack web architecture levera
 - **Pusher** - WebSockets for immediate bi-directional event syncing.
 
 **AI & Utilities:**
-- **Groq SDK** - Lighting-fast inference for generative intelligence, resume parsing, missing skill identification, and contextual rejection logic.
+- **Groq SDK** - Lighting-fast inference for generative intelligence, interactive voice mock interviews (Chat & Whisper), resume parsing, missing skill identification, and contextual rejection logic.
 - **AWS S3** - Decentralized block storage for PDF documents.
 - **Nodemailer + PDFKit** - Secure SMTP delivery sequences with built-in runtime document processing/generation.
 
@@ -123,7 +124,7 @@ Make sure you have Node 18+ and `npm` or `yarn` installed. You will also need a 
 
 ## 🏗️ Core Modules
 - **`/app/recruiter/`**: Contains the pipeline architecture, graph visualizations, candidate bulk tools, and the job creation workflows.
-- **`/app/candidate/`**: Contains skill gap paths, resume upload and parsing UX, ATS compatibility checks, and job explorers.
+- **`/app/candidate/`**: Contains the interactive 3D mock interviewer, skill gap paths, resume parsing UX, ATS compatibility checks, and job explorers.
 - **`/lib/ai/`**: Abstracted prompt matrices utilized directly by the Groq infrastructure.
 - **`/lib/mailer.ts`**: The abstracted async logic pipeline for firing templates (Receipts, Outcome, Offers).
 - **`/components/kanban/`**: The abstracted dnd-kit modules running the recruiter board.
