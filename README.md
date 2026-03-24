@@ -23,7 +23,7 @@
 - **One-Click Offers:** Instant professional PDF offer letter generation attached seamlessly to "You're Hired" emails.
 
 ### 👤 For Candidates
-- **AI Mock Interviewer:** An interactive, voice-to-voice 3D AI interviewer that dynamically asks technical and behavioral questions specifically tailored to the candidate's resume and the target job description.
+- **AI Mock Interviewer:** An interactive, voice-to-voice AI interviewer that dynamically asks technical and behavioral questions specifically tailored to the candidate's resume and the target job description.
 - **Deep Resume Parsing:** Extracts skills, categorizes them, standardizes proficiencies, and aligns past experience using custom AI pipelines.
 - **Skill Gap & Rejection Analysis:** If rejected, candidates don't just get a generic refusal; they receive an AI-generated personalized learning pathway explaining exactly *why* based on recruiter notes and missing JD variables.
 - **Transparent Tracking:** Candidates get real-time email triggers and dynamic UI indicators for the precise stage their application is at.
