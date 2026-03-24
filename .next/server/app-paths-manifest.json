@@ -1,9 +1,9 @@
 {
-  "/candidate/resume-builder/page": "app/candidate/resume-builder/page.js",
-  "/api/candidate/profile/route": "app/api/candidate/profile/route.js",
+  "/page": "app/page.js",
+  "/(auth)/register/page": "app/(auth)/register/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/recruiter/dashboard/page": "app/recruiter/dashboard/page.js",
+  "/recruiter/jobs/[id]/pipeline/page": "app/recruiter/jobs/[id]/pipeline/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/candidate/export-resume/route": "app/api/candidate/export-resume/route.js",
-  "/candidate/dashboard/page": "app/candidate/dashboard/page.js",
-  "/api/applications/route": "app/api/applications/route.js",
-  "/api/candidate/recommendations/route": "app/api/candidate/recommendations/route.js"
+  "/api/recruiter/resume/route": "app/api/recruiter/resume/route.js"
 }

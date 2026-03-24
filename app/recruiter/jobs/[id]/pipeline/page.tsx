@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { Pipeline, PipelineApplication } from '@/components/kanban/Pipeline'
-import { Loader2, ArrowLeft, Network, X, ChevronRight, Save, CheckCircle, XCircle, MinusCircle, Users, MoveRight, GitCompare, Trophy, TrendingDown } from 'lucide-react'
+import { Loader2, ArrowLeft, Network, X, ChevronRight, Save, CheckCircle, XCircle, MinusCircle, Users, MoveRight, GitCompare, Trophy, TrendingDown, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { scoreColor, scoreBg } from '@/lib/utils'
@@ -42,6 +42,7 @@ export default function PipelinePage() {
   const [compareOpen, setCompareOpen] = useState(false)
   const [compareData, setCompareData] = useState<{ topCandidate: CompareCandidate | null; candidates: CompareCandidate[] } | null>(null)
   const [loadingCompare, setLoadingCompare] = useState(false)
+  const [loadingResume, setLoadingResume] = useState(false)
 
   const { data: job } = useQuery({
     queryKey: ['job', jobId],
@@ -151,6 +152,22 @@ export default function PipelinePage() {
       toast.error('Failed to load comparison')
     } finally {
       setLoadingCompare(false)
+    }
+  }
+
+  async function handleViewResume() {
+    if (!selectedApp) return
+    setLoadingResume(true)
+    try {
+      const res = await fetch(`/api/recruiter/resume?applicationId=${selectedApp._id}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch resume')
+      window.open(data.url, '_blank', 'noopener,noreferrer')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load resume'
+      toast.error(message)
+    } finally {
+      setLoadingResume(false)
     }
   }
 
@@ -414,6 +431,25 @@ export default function PipelinePage() {
               )}
             </div>
           </div>
+
+          {/* Resume button */}
+          {selectedApp.candidate?.resumeS3Key ? (
+            <button
+              onClick={handleViewResume}
+              disabled={loadingResume}
+              className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm text-violet-300 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+            >
+              {loadingResume
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <FileText className="h-4 w-4" />}
+              {loadingResume ? 'Opening resume…' : 'View Resume PDF'}
+            </button>
+          ) : (
+            <div className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/3 px-4 py-2.5 text-sm text-muted-foreground cursor-not-allowed">
+              <FileText className="h-4 w-4" />
+              No resume uploaded
+            </div>
+          )}
 
           {/* Radar chart */}
           {radarValues && (

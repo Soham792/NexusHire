@@ -22,11 +22,13 @@ export interface PipelineApplication {
   matchScore: number
   percentileRank?: number
   createdAt: string
+  resumeS3Key?: string
   candidate?: {
     name: string
     email: string
     headline?: string
     image?: string
+    resumeS3Key?: string
   }
 }
 

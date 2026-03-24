@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       const [user, profile] = await Promise.all([
         User.findById(app.candidateId).select('name email image').lean(),
         CandidateProfile.findOne({ userId: app.candidateId })
-          .select('headline skills profileStrength resumeUrl')
+          .select('headline skills profileStrength resumeS3Key')
           .lean(),
       ])
       const rawScore = app.matchScore as { overall?: number } | number | undefined
