@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Navbar } from '@/components/Navbar'
+import { SplineBackground } from '@/components/SplineBackground'
 import { ArrowRight, Brain, Network, Search, Zap, BarChart3, MessageSquare } from 'lucide-react'
 
 const features = [
@@ -42,17 +43,14 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden py-24 lg:py-32">
-        {/* Background glow */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-violet-600/10 blur-3xl" />
-          <div className="absolute top-60 right-0 h-[400px] w-[400px] rounded-full bg-purple-600/8 blur-3xl" />
-        </div>
+        {/* Spline 3D background */}
+        <SplineBackground />
 
-        <div className="relative mx-auto max-w-7xl px-4 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm text-violet-300">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 text-center">
+          {/* <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm text-violet-300">
             <Zap className="h-3.5 w-3.5" />
             Powered by Groq + NVIDIA NIM
-          </div>
+          </div> */}
 
           <h1 className="mt-6 text-5xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
             Hire and get hired
@@ -79,6 +77,36 @@ export default function LandingPage() {
             >
               Post a job
             </Link>
+          </div>
+
+          {/* Glow beneath the buttons */}
+          <div className="pointer-events-none flex justify-center" style={{ marginTop: '-4px' }}>
+            {/* tight bright core */}
+            <div style={{
+              position: 'absolute',
+              width: '420px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 40%, transparent 70%)',
+              filter: 'blur(10px)',
+            }} />
+            {/* mid spread */}
+            <div style={{
+              position: 'absolute',
+              width: '480px',
+              height: '50px',
+              borderRadius: '50%',
+              background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.25) 0%, rgba(200,190,255,0.12) 50%, transparent 72%)',
+              filter: 'blur(18px)',
+            }} />
+            {/* wide soft aura */}
+            <div style={{
+              width: '680px',
+              height: '70px',
+              borderRadius: '50%',
+              background: 'radial-gradient(ellipse at center, rgba(180,170,255,0.15) 0%, transparent 68%)',
+              filter: 'blur(28px)',
+            }} />
           </div>
         </div>
       </section>

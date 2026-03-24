@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import * as d3 from 'd3'
-import { scoreNodeColor } from '@/lib/utils'
+import dynamic from 'next/dynamic'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import * as THREE from 'three'
 
+const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { ssr: false })
+
+// ── Public types ──────────────────────────────────────────────────────────────
 export interface JobNode {
   id: string
   title: string
@@ -13,34 +16,6 @@ export interface JobNode {
   employmentType?: string
   locationType?: string
   requiredSkills?: Array<{ skill: string; weight: number }>
-  x?: number
-  y?: number
-  fx?: number | null
-  fy?: number | null
-}
-
-interface CandidateCenter {
-  id: string
-  label: string
-  isCandidate: true
-  x?: number
-  y?: number
-  fx?: number | null
-  fy?: number | null
-}
-
-type OGNode = JobNode | CandidateCenter
-
-interface OGLink {
-  source: string | OGNode
-  target: string | OGNode
-  score: number
-}
-
-interface ClusterLink {
-  source: string | OGNode
-  target: string | OGNode
-  sharedCount: number
 }
 
 interface OpportunityGraphProps {
@@ -51,243 +26,236 @@ interface OpportunityGraphProps {
   height?: number
 }
 
+// ── Legend data (outside JSX to avoid as-const / TSX parse issues) ────────────
+const LEGEND = [
+  { col: '#22c55e', label: '≥ 75%  Strong match' },
+  { col: '#f59e0b', label: '50–74%  Good match' },
+  { col: '#ef4444', label: '< 50%  Weak match' },
+  { col: '#7c3aed', label: 'You (candidate)' },
+]
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function scoreHex(score: number) {
+  if (score >= 75) return '#22c55e'
+  if (score >= 50) return '#f59e0b'
+  return '#ef4444'
+}
+
+function makeSprite(text: string, color: string, fontSize = 24): THREE.Sprite {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')!
+  const px = fontSize * 2
+  ctx.font = `600 ${px}px Inter,system-ui,sans-serif`
+  const tw = ctx.measureText(text).width
+  canvas.width = tw + 28
+  canvas.height = px + 18
+  ctx.font = `600 ${px}px Inter,system-ui,sans-serif`
+  ctx.fillStyle = color
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 14, canvas.height / 2)
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.needsUpdate = true
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
+  const sprite = new THREE.Sprite(mat)
+  const aspect = canvas.width / canvas.height
+  sprite.scale.set(aspect * 12, 12, 1)
+  return sprite
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export function OpportunityGraph({
   jobs,
   candidateName,
   selectedJobId,
   onJobClick,
-  height = 540,
+  height = 640,
 }: OpportunityGraphProps) {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fgRef = useRef<any>(null)
+  const [width, setWidth] = useState(900)
 
   useEffect(() => {
-    if (!svgRef.current || !wrapRef.current || !jobs.length) return
-
-    const width = wrapRef.current.clientWidth || 800
-    const cx = width / 2
-    const cy = height / 2
-
-    const svg = d3.select(svgRef.current)
-    svg.selectAll('*').remove()
-    svg.attr('viewBox', `0 0 ${width} ${height}`).attr('width', '100%').attr('height', height)
-
-    // ── Defs ─────────────────────────────────────────────────────────────────
-    const defs = svg.append('defs')
-    const glow = defs.append('filter').attr('id', 'og-glow').attr('x', '-30%').attr('y', '-30%').attr('width', '160%').attr('height', '160%')
-    glow.append('feGaussianBlur').attr('stdDeviation', 4).attr('result', 'blur')
-    const merge = glow.append('feMerge')
-    merge.append('feMergeNode').attr('in', 'blur')
-    merge.append('feMergeNode').attr('in', 'SourceGraphic')
-
-    // Candidate glow (purple)
-    const cglow = defs.append('filter').attr('id', 'og-cglow').attr('x', '-40%').attr('y', '-40%').attr('width', '180%').attr('height', '180%')
-    cglow.append('feGaussianBlur').attr('stdDeviation', 8).attr('result', 'blur')
-    const cm = cglow.append('feMerge')
-    cm.append('feMergeNode').attr('in', 'blur')
-    cm.append('feMergeNode').attr('in', 'SourceGraphic')
-
-    // ── Nodes & Links ─────────────────────────────────────────────────────────
-    const centerNode: CandidateCenter = {
-      id: '__candidate__',
-      label: candidateName,
-      isCandidate: true,
-      fx: cx,
-      fy: cy,
-    }
-
-    const allNodes: OGNode[] = [centerNode, ...jobs]
-
-    const mainLinks: OGLink[] = jobs.map((j) => ({
-      source: '__candidate__',
-      target: j.id,
-      score: j.score,
-    }))
-
-    // Skill-cluster edges between similar jobs (shared 2+ skills)
-    const clusterLinks: ClusterLink[] = []
-    for (let i = 0; i < jobs.length; i++) {
-      const setA = new Set((jobs[i].requiredSkills || []).map((s) => s.skill.toLowerCase()))
-      for (let k = i + 1; k < jobs.length; k++) {
-        const shared = (jobs[k].requiredSkills || []).filter((s) => setA.has(s.skill.toLowerCase())).length
-        if (shared >= 2) clusterLinks.push({ source: jobs[i].id, target: jobs[k].id, sharedCount: shared })
-      }
-    }
-
-    // ── Simulation ────────────────────────────────────────────────────────────
-    const nodeRadius = (d: OGNode) => {
-      if ('isCandidate' in d) return 44
-      return 14 + (d as JobNode).score / 4.8
-    }
-
-    const sim = d3.forceSimulation<OGNode>(allNodes)
-      .force(
-        'link',
-        d3.forceLink<OGNode, OGLink>(mainLinks)
-          .id((d) => d.id)
-          .distance((d) => Math.max(120, 230 - d.score * 1.4))
-          .strength(0.7),
-      )
-      .force(
-        'cluster',
-        d3.forceLink<OGNode, ClusterLink>(clusterLinks)
-          .id((d) => d.id)
-          .distance(80)
-          .strength((d) => Math.min(d.sharedCount * 0.04, 0.15)),
-      )
-      .force('charge', d3.forceManyBody<OGNode>().strength(-380))
-      .force('center', d3.forceCenter(cx, cy))
-      .force('collision', d3.forceCollide<OGNode>().radius((d) => nodeRadius(d) + 10))
-
-    // ── SVG groups ────────────────────────────────────────────────────────────
-    const root = svg.call(
-      d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.25, 3])
-        .on('zoom', (e) => g.attr('transform', e.transform)),
-    ).append('g') as d3.Selection<SVGGElement, unknown, null, undefined>
-
-    const g = root
-
-    // Cluster dashed lines
-    const clusterLineG = g.append('g')
-    const clusterLine = clusterLineG
-      .selectAll<SVGLineElement, ClusterLink>('line')
-      .data(clusterLinks)
-      .enter()
-      .append('line')
-      .attr('stroke', 'rgba(139,92,246,0.13)')
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '3,5')
-
-    // Main score lines
-    const mainLineG = g.append('g')
-    const mainLine = mainLineG
-      .selectAll<SVGLineElement, OGLink>('line')
-      .data(mainLinks)
-      .enter()
-      .append('line')
-      .attr('stroke', (d) => {
-        const c = scoreNodeColor(d.score)
-        return `${c}55`
-      })
-      .attr('stroke-width', (d) => 1.2 + d.score / 50)
-
-    // ── Job nodes ─────────────────────────────────────────────────────────────
-    const jobG = g.append('g')
-      .selectAll<SVGGElement, JobNode>('g')
-      .data(jobs)
-      .enter()
-      .append('g')
-      .attr('class', 'graph-node')
-      .style('cursor', 'pointer')
-      .call(
-        d3.drag<SVGGElement, JobNode>()
-          .on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y })
-          .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y })
-          .on('end', (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null }),
-      )
-      .on('click', (_, d) => onJobClick?.(d))
-
-    // Outer glow ring for high-match
-    jobG.filter((d) => d.score >= 75)
-      .append('circle')
-      .attr('r', (d) => nodeRadius(d) + 6)
-      .attr('fill', 'none')
-      .attr('stroke', (d) => `${scoreNodeColor(d.score)}33`)
-      .attr('stroke-width', 4)
-      .attr('filter', 'url(#og-glow)')
-
-    // Main circle
-    jobG.append('circle')
-      .attr('r', (d) => nodeRadius(d))
-      .attr('fill', (d) => `${scoreNodeColor(d.score)}1A`)
-      .attr('stroke', (d) => d.id === selectedJobId ? '#c4b5fd' : scoreNodeColor(d.score))
-      .attr('stroke-width', (d) => d.id === selectedJobId ? 3 : 1.5)
-
-    // Score text
-    jobG.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('font-size', (d) => Math.min(12, 8 + d.score / 18))
-      .attr('font-weight', 'bold')
-      .attr('fill', (d) => scoreNodeColor(d.score))
-      .style('pointer-events', 'none')
-      .text((d) => `${d.score}%`)
-
-    // Job title
-    jobG.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', (d) => nodeRadius(d) + 13)
-      .attr('font-size', 9.5)
-      .attr('fill', 'rgba(255,255,255,0.7)')
-      .style('pointer-events', 'none')
-      .text((d) => (d.title.length > 18 ? d.title.slice(0, 16) + '…' : d.title))
-
-    // Company
-    jobG.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', (d) => nodeRadius(d) + 25)
-      .attr('font-size', 8)
-      .attr('fill', 'rgba(255,255,255,0.35)')
-      .style('pointer-events', 'none')
-      .text((d) => (d.companyName.length > 14 ? d.companyName.slice(0, 12) + '…' : d.companyName))
-
-    // ── Candidate center node ─────────────────────────────────────────────────
-    const candG = g.append('g')
-
-    // Pulse ring
-    candG.append('circle')
-      .attr('r', 58)
-      .attr('fill', 'none')
-      .attr('stroke', 'rgba(139,92,246,0.12)')
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '5,4')
-
-    candG.append('circle')
-      .attr('r', 44)
-      .attr('fill', 'rgba(109,40,217,0.2)')
-      .attr('stroke', '#7c3aed')
-      .attr('stroke-width', 2.5)
-      .attr('filter', 'url(#og-cglow)')
-
-    candG.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('font-size', 22)
-      .text('👤')
-
-    candG.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', 58)
-      .attr('font-size', 10)
-      .attr('font-weight', 'bold')
-      .attr('fill', 'rgba(167,139,250,0.85)')
-      .text('You')
-
-    // ── Tick ─────────────────────────────────────────────────────────────────
-    sim.on('tick', () => {
-      clusterLine
-        .attr('x1', (d) => ((d.source as OGNode).x ?? 0))
-        .attr('y1', (d) => ((d.source as OGNode).y ?? 0))
-        .attr('x2', (d) => ((d.target as OGNode).x ?? 0))
-        .attr('y2', (d) => ((d.target as OGNode).y ?? 0))
-
-      mainLine
-        .attr('x1', (d) => ((d.source as OGNode).x ?? 0))
-        .attr('y1', (d) => ((d.source as OGNode).y ?? 0))
-        .attr('x2', (d) => ((d.target as OGNode).x ?? 0))
-        .attr('y2', (d) => ((d.target as OGNode).y ?? 0))
-
-      jobG.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
-      candG.attr('transform', `translate(${centerNode.fx ?? cx},${centerNode.fy ?? cy})`)
+    if (!containerRef.current) return
+    setWidth(containerRef.current.offsetWidth)
+    const ro = new ResizeObserver(() => {
+      if (containerRef.current) setWidth(containerRef.current.offsetWidth)
     })
+    ro.observe(containerRef.current)
+    return () => ro.disconnect()
+  }, [])
 
-    return () => { sim.stop() }
-  }, [jobs, candidateName, selectedJobId, height])
+  // Boost repulsion + link distance so nodes spread out properly
+  useEffect(() => {
+    const fg = fgRef.current
+    if (!fg) return
+    fg.d3Force('charge')?.strength?.(-800)
+    fg.d3Force('link')?.distance?.(350).strength?.(0.3)
+    fg.d3ReheatSimulation()
+  }, [jobs.length]) // re-apply when node count changes
+
+  // Pull camera to a comfortable zoom once simulation settles
+  const handleEngineStop = useCallback(() => {
+    fgRef.current?.cameraPosition({ x: 0, y: 0, z: 380 }, { x: 0, y: 0, z: 0 }, 1000)
+  }, [])
+
+  // ── Graph data ──────────────────────────────────────────────────────────
+  const nodes = [
+    { id: '__candidate__', type: 'candidate', label: candidateName, score: 100 },
+    ...jobs.map((j) => ({
+      id: j.id, type: 'job', label: j.title,
+      company: j.companyName, score: j.score, requiredSkills: j.requiredSkills,
+    })),
+  ]
+
+  const mainLinks = jobs.map((j) => ({
+    source: '__candidate__', target: j.id, score: j.score, linkType: 'main',
+  }))
+
+  const clusterLinks: { source: string; target: string; score: number; linkType: string }[] = []
+  for (let i = 0; i < jobs.length; i++) {
+    const setA = new Set((jobs[i].requiredSkills || []).map((s) => s.skill.toLowerCase()))
+    for (let k = i + 1; k < jobs.length; k++) {
+      const shared = (jobs[k].requiredSkills || []).filter((s) => setA.has(s.skill.toLowerCase())).length
+      if (shared >= 2) clusterLinks.push({ source: jobs[i].id, target: jobs[k].id, score: 0, linkType: 'cluster' })
+    }
+  }
+
+  const graphData = { nodes, links: [...mainLinks, ...clusterLinks] }
+
+  // ── Custom node object ────────────────────────────────────────────────
+  const nodeThreeObject = useCallback((node: Record<string, unknown>) => {
+    const isCandidate = node.type === 'candidate'
+    const score = (node.score as number) ?? 0
+    const radius = isCandidate ? 16 : 6 + score / 9
+    const hexColor = isCandidate ? '#7c3aed' : (node.id === selectedJobId ? '#c4b5fd' : scoreHex(score))
+
+    const group = new THREE.Group()
+
+    // Sphere
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 28, 28),
+      new THREE.MeshLambertMaterial({
+        color: new THREE.Color(hexColor),
+        transparent: true,
+        opacity: isCandidate ? 0.95 : 0.88,
+      }),
+    )
+    group.add(sphere)
+
+    // Outer ring on candidate
+    if (isCandidate) {
+      group.add(new THREE.Mesh(
+        new THREE.TorusGeometry(radius + 5, 0.8, 10, 56),
+        new THREE.MeshBasicMaterial({ color: '#a78bfa', transparent: true, opacity: 0.5 }),
+      ))
+    }
+
+    // Score badge above node (jobs)
+    if (!isCandidate) {
+      const badge = makeSprite(`${score}%`, scoreHex(score), 22)
+      badge.position.set(0, radius + 12, 0)
+      group.add(badge)
+    }
+
+    // Name label below node
+    const rawLabel = node.label as string
+    const displayName = isCandidate
+      ? `👤 ${rawLabel}`
+      : rawLabel.length > 20 ? rawLabel.slice(0, 18) + '…' : rawLabel
+    const nameSprite = makeSprite(displayName, isCandidate ? '#c4b5fd' : '#e2e8f0', isCandidate ? 24 : 20)
+    nameSprite.position.set(0, -(radius + 12), 0)
+    group.add(nameSprite)
+
+    // Company label even further below (jobs)
+    if (!isCandidate && node.company) {
+      const comp = node.company as string
+      const compSprite = makeSprite(
+        comp.length > 20 ? comp.slice(0, 18) + '…' : comp,
+        '#64748b', 16,
+      )
+      compSprite.position.set(0, -(radius + 28), 0)
+      group.add(compSprite)
+    }
+
+    return group
+  }, [selectedJobId])
+
+  // ── Link / node helpers ───────────────────────────────────────────────
+  const linkColor = useCallback((link: Record<string, unknown>) => {
+    if (link.linkType === 'cluster') return 'rgba(139,92,246,0.18)'
+    return scoreHex(link.score as number) + 'aa'
+  }, [])
+
+  const linkWidth = useCallback((link: Record<string, unknown>) => {
+    if (link.linkType === 'cluster') return 0.5
+    return 1 + (link.score as number) / 50
+  }, [])
+
+  const particleSpeed = useCallback((link: Record<string, unknown>) =>
+    link.linkType === 'main' ? 0.004 : 0, [])
+
+  const nodeVal = useCallback((node: Record<string, unknown>) =>
+    node.type === 'candidate' ? 36 : 6 + (node.score as number) / 10, [])
+
+  // Pin node at dropped position so it doesn't spring back
+  const handleNodeDragEnd = useCallback((node: Record<string, unknown>) => {
+    node.fx = node.x
+    node.fy = node.y
+    node.fz = node.z
+  }, [])
+
+  const handleClick = useCallback((node: Record<string, unknown>) => {
+    if (node.type === 'job') {
+      const job = jobs.find((j) => j.id === node.id)
+      if (job) onJobClick?.(job)
+    }
+  }, [jobs, onJobClick])
 
   return (
-    <div ref={wrapRef} className="w-full">
-      <svg ref={svgRef} className="rounded-xl border border-white/10 w-full" style={{ background: 'rgba(255,255,255,0.01)', height }} />
+    <div
+      ref={containerRef}
+      className="relative w-full rounded-2xl overflow-hidden border border-white/10"
+      style={{ height, background: 'linear-gradient(135deg,#0d0d1a 0%,#0f0a1e 60%,#0a0d1a 100%)' }}
+    >
+      <ForceGraph3D
+        ref={fgRef}
+        graphData={graphData}
+        width={width}
+        height={height}
+        backgroundColor="rgba(0,0,0,0)"
+        showNavInfo={false}
+        nodeThreeObject={nodeThreeObject}
+        nodeVal={nodeVal}
+        linkColor={linkColor}
+        linkWidth={linkWidth}
+        linkDirectionalParticles={3}
+        linkDirectionalParticleWidth={2}
+        linkDirectionalParticleSpeed={particleSpeed}
+        onNodeClick={handleClick}
+        onNodeDragEnd={handleNodeDragEnd}
+        onEngineStop={handleEngineStop}
+        warmupTicks={80}
+        cooldownTicks={120}
+        d3AlphaDecay={0.012}
+        d3VelocityDecay={0.25}
+      />
+
+      {/* Legend */}
+      <div className="absolute top-4 left-4 flex flex-col gap-2 rounded-xl border border-white/10 bg-black/60 backdrop-blur-md px-4 py-3">
+        <p className="text-[10px] font-semibold text-white/50 uppercase tracking-widest mb-1">Match Score</p>
+        {LEGEND.map((item) => (
+          <div key={item.label} className="flex items-center gap-2.5">
+            <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ background: item.col }} />
+            <span className="text-xs text-white/75">{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Hint */}
+      <div className="absolute bottom-4 right-4 rounded-lg border border-white/10 bg-black/60 backdrop-blur-md px-3 py-1.5">
+        <p className="text-[11px] text-white/40">Drag · Scroll to zoom · Click node</p>
+      </div>
     </div>
   )
 }
