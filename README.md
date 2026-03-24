@@ -1,5 +1,7 @@
 # NexusHire (by Team Ace of Roots)
 
+> **Problem Statement:** PS 3 - Job Portal Website  
+> **Category:** Web / App Development  
 > **Team Name:** Ace of Roots  
 > **Leader:** Manglam Jaiswal  
 
